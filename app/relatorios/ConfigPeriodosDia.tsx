@@ -20,6 +20,10 @@ export function lerLimitesPeriodo(): LimitesPeriodo {
 
 type Props = { limites: LimitesPeriodo; onSalvar: (novos: LimitesPeriodo) => void }
 
+function h(n: number) {
+  return `${String(n).padStart(2, '0')}h`
+}
+
 export default function ConfigPeriodosDia({ limites, onSalvar }: Props) {
   const [aberto, setAberto] = useState(false)
   const [manha, setManha] = useState(limites.manha)
@@ -28,7 +32,7 @@ export default function ConfigPeriodosDia({ limites, onSalvar }: Props) {
   const [erro, setErro] = useState<string | null>(null)
 
   function handleSalvar() {
-    if (!(manha < tarde && tarde < noite)) {
+    if (!(0 < manha && manha < tarde && tarde < noite && noite < 24)) {
       setErro('Os horários precisam estar em ordem crescente (manhã < tarde < noite).')
       return
     }
@@ -39,38 +43,49 @@ export default function ConfigPeriodosDia({ limites, onSalvar }: Props) {
     setErro(null)
   }
 
+  const inputStyle: React.CSSProperties = { width: 46, padding: '4px 6px', textAlign: 'center', fontSize: 12 }
+
   return (
     <div style={{ position: 'relative', display: 'inline-block' }}>
       <button
         onClick={() => setAberto(!aberto)}
         aria-label="Ajustar horários"
-        style={{ border: 'none', background: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: 12, padding: 2, opacity: 0.6 }}
+        style={{ border: 'none', background: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: 14, padding: 2, opacity: 0.7 }}
       >
-        ✎
+        ⚙
       </button>
 
       {aberto && (
-        <div style={{ position: 'absolute', top: '120%', right: 0, zIndex: 20, background: 'var(--panel)', border: '1px solid var(--line-strong)', borderRadius: 12, padding: 14, width: 220 }}>
-          <p style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 10 }}>A que horas cada período começa?</p>
+        <div style={{ position: 'absolute', top: '120%', right: 0, zIndex: 20, background: 'var(--panel)', border: '1px solid var(--line-strong)', borderRadius: 12, padding: 14, width: 260 }}>
+          <p style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 12 }}>Início e fim de cada período</p>
 
-          {[
-            { label: 'Manhã começa às', valor: manha, set: setManha },
-            { label: 'Tarde começa às', valor: tarde, set: setTarde },
-            { label: 'Noite começa às', valor: noite, set: setNoite },
-          ].map((campo) => (
-            <div key={campo.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-              <span style={{ fontSize: 12 }}>{campo.label}</span>
-              <input
-                type="number"
-                min={0}
-                max={23}
-                value={campo.valor}
-                onChange={(e) => campo.set(Number(e.target.value))}
-                className="input mono"
-                style={{ width: 50, padding: '4px 6px', textAlign: 'center', fontSize: 12 }}
-              />
-            </div>
-          ))}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 9 }}>
+            <span style={{ fontSize: 12, width: 74 }}>Madrugada</span>
+            <span className="mono" style={{ fontSize: 12, color: 'var(--text-dim)' }}>{h(0)}</span>
+            <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>até</span>
+            <input type="number" min={1} max={23} value={manha} onChange={(e) => setManha(Number(e.target.value))} className="input mono" style={inputStyle} />
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 9 }}>
+            <span style={{ fontSize: 12, width: 74 }}>Manhã</span>
+            <span className="mono" style={{ fontSize: 12, color: 'var(--text-dim)' }}>{h(manha)}</span>
+            <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>até</span>
+            <input type="number" min={1} max={23} value={tarde} onChange={(e) => setTarde(Number(e.target.value))} className="input mono" style={inputStyle} />
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 9 }}>
+            <span style={{ fontSize: 12, width: 74 }}>Tarde</span>
+            <span className="mono" style={{ fontSize: 12, color: 'var(--text-dim)' }}>{h(tarde)}</span>
+            <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>até</span>
+            <input type="number" min={1} max={23} value={noite} onChange={(e) => setNoite(Number(e.target.value))} className="input mono" style={inputStyle} />
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <span style={{ fontSize: 12, width: 74 }}>Noite</span>
+            <span className="mono" style={{ fontSize: 12, color: 'var(--text-dim)' }}>{h(noite)}</span>
+            <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>até</span>
+            <span className="mono" style={{ fontSize: 12, color: 'var(--text-dim)', width: 46, textAlign: 'center' }}>24h</span>
+          </div>
 
           {erro && <p className="error-text" style={{ fontSize: 11, marginBottom: 8 }}>{erro}</p>}
 
