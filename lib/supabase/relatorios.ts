@@ -176,13 +176,15 @@ function anoMesFortaleza(d: Date): { ano: number; mes: number } {
   return { ano: partes[0], mes: partes[1] }
 }
 
-export async function buscarEvolucaoDiaSemana(diaSemana: number, numMeses = 7): Promise<PontoEvolucao[]> {
+export async function buscarEvolucaoDiaSemana(diaSemana: number, numMeses = 7, mesesAtras = 0): Promise<PontoEvolucao[]> {
   const supabase = createClient()
   const agora = new Date()
   const { ano: anoAtual, mes: mesAtual } = anoMesFortaleza(agora)
-  const inicioRange = new Date(Date.UTC(anoAtual, mesAtual - numMeses, 1))
+  const mesAncora = mesAtual - mesesAtras
+  const inicioRange = new Date(Date.UTC(anoAtual, mesAncora - numMeses, 1))
+  const fimRange = new Date(Date.UTC(anoAtual, mesAncora, 1))
   const inicioISO = `${inicioRange.getUTCFullYear()}-${String(inicioRange.getUTCMonth() + 1).padStart(2, '0')}-01T00:00:00-03:00`
-  const fimISO = agora.toISOString()
+  const fimISO = `${fimRange.getUTCFullYear()}-${String(fimRange.getUTCMonth() + 1).padStart(2, '0')}-01T00:00:00-03:00`
 
   const { data: vendas, error } = await supabase
     .from('vendas').select('data_hora, valor_total').eq('status', 'concluida')
@@ -199,7 +201,7 @@ export async function buscarEvolucaoDiaSemana(diaSemana: number, numMeses = 7): 
 
   const pontos: PontoEvolucao[] = []
   for (let i = numMeses - 1; i >= 0; i--) {
-    const d = new Date(Date.UTC(anoAtual, mesAtual - 1 - i, 1))
+    const d = new Date(Date.UTC(anoAtual, mesAncora - 1 - i, 1))
     const ano = d.getUTCFullYear()
     const mes = d.getUTCMonth() + 1
     const chave = `${ano}-${mes}`
@@ -228,4 +230,118 @@ export async function buscarFechamentoMensal(ano: number): Promise<PontoMensal[]
   }
   const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
   return MESES.map((label, i) => ({ label, total: somaPorMes[i] }))
+}
+
+export type ProdutoCurvaABC = {
+  produto_id: string
+  nome: string
+  grupo: 'A' | 'B' | 'C'
+  totalVendido: number
+  percentualReceita: number
+  estoqueAtual: number
+  estoqueMinimo: number
+}
+
+export type CurvaABC = {
+  produtos: ProdutoCurvaABC[]
+  resumo: { A: number; B: number; C: number }
+  conselhos: string[]
+}
+
+export async function buscarCurvaABC(inicio: string, fim: string): Promise<CurvaABC> {
+  const supabase = createClient()
+
+  const { data: vendas, error: erroVendas } = await supabase
+    .from('vendas').select('id').eq('status', 'concluida').gte('data_hora', inicio).lt('data_hora', fim)
+  if (erroVendas) throw erroVendas
+
+  const vendaIds = (vendas ?? []).map((v) => v.id)
+  let itens: any[] = []
+  if (vendaIds.length > 0) {
+    const { data, error } = await supabase
+      .from('itens_venda')
+      .select('produto_id, quantidade, preco_venda_unitario, produtos(nome, estoque_atual, estoque_minimo)')
+      .in('venda_id', vendaIds)
+    if (error) throw error
+    itens = data ?? []
+  }
+
+  const { data: todosProdutos, error: erroProdutos } = await supabase
+    .from('produtos').select('id, nome, estoque_atual, estoque_minimo')
+  if (erroProdutos) throw erroProdutos
+
+  const porProduto: Record<string, { nome: string; total: number; estoqueAtual: number; estoqueMinimo: number }> = {}
+
+  for (const p of todosProdutos ?? []) {
+    porProduto[p.id] = { nome: p.nome, total: 0, estoqueAtual: p.estoque_atual, estoqueMinimo: p.estoque_minimo }
+  }
+
+  for (const item of itens) {
+    if (!porProduto[item.produto_id]) continue
+    porProduto[item.produto_id].total += item.quantidade * item.preco_venda_unitario
+  }
+
+  const listaOrdenada = Object.entries(porProduto)
+    .map(([id, v]) => ({ produto_id: id, ...v }))
+    .sort((a, b) => b.total - a.total)
+
+  const totalGeral = listaOrdenada.reduce((s, p) => s + p.total, 0)
+
+  let acumulado = 0
+  const produtos: ProdutoCurvaABC[] = listaOrdenada.map((p) => {
+    const percentual = totalGeral > 0 ? (p.total / totalGeral) * 100 : 0
+    acumulado += percentual
+    let grupo: 'A' | 'B' | 'C'
+    if (acumulado <= 80) grupo = 'A'
+    else if (acumulado <= 95) grupo = 'B'
+    else grupo = 'C'
+    return {
+      produto_id: p.produto_id,
+      nome: p.nome,
+      grupo,
+      totalVendido: p.total,
+      percentualReceita: percentual,
+      estoqueAtual: p.estoqueAtual,
+      estoqueMinimo: p.estoqueMinimo,
+    }
+  })
+
+  const resumo = {
+    A: produtos.filter((p) => p.grupo === 'A').length,
+    B: produtos.filter((p) => p.grupo === 'B').length,
+    C: produtos.filter((p) => p.grupo === 'C').length,
+  }
+
+  // Conselhos automáticos
+  const conselhos: string[] = []
+  const grupoA = produtos.filter((p) => p.grupo === 'A')
+  const grupoC = produtos.filter((p) => p.grupo === 'C')
+
+  const aSemEstoque = grupoA.filter((p) => p.estoqueAtual <= 0)
+  const aEstoqueBaixo = grupoA.filter((p) => p.estoqueAtual > 0 && p.estoqueAtual <= p.estoqueMinimo)
+  const cSemVenda = grupoC.filter((p) => p.totalVendido === 0 && p.estoqueAtual > 0)
+  const cEstoqueAlto = grupoC.filter((p) => p.totalVendido > 0 && p.estoqueAtual > p.estoqueMinimo * 5)
+
+  for (const p of aSemEstoque) {
+    conselhos.push(`🚨 URGENTE: ${p.nome} (grupo A) está sem estoque. Sozinho ele é ${p.percentualReceita.toFixed(0)}% da sua receita — reponha o quanto antes.`)
+  }
+  for (const p of aEstoqueBaixo) {
+    conselhos.push(`⚠ ${p.nome} (grupo A) está com estoque baixo (${p.estoqueAtual} un). Sozinho ele é ${p.percentualReceita.toFixed(0)}% da receita — vale repor.`)
+  }
+  for (const p of cSemVenda.slice(0, 5)) {
+    conselhos.push(`💡 ${p.nome} (grupo C) não vendeu nada nesse período mas ainda tem ${p.estoqueAtual} un em estoque. Considere não repor quando acabar.`)
+  }
+  for (const p of cEstoqueAlto.slice(0, 3)) {
+    conselhos.push(`💡 ${p.nome} (grupo C) tem ${p.estoqueAtual} un em estoque mas gira pouco. Evite comprar mais.`)
+  }
+
+  if (aSemEstoque.length === 0 && aEstoqueBaixo.length === 0 && resumo.A > 0) {
+    conselhos.unshift(`✓ Grupo A completo em estoque — situação saudável.`)
+  }
+
+  if (conselhos.length === 0) {
+    conselhos.push('Sem alertas nesse período. Cadastre mais produtos e registre mais vendas pra ver a análise ABC funcionando.')
+  }
+
+  return { produtos, resumo, conselhos }
 }
