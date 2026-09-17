@@ -43,7 +43,7 @@ export default function ConfigPeriodosDia({ limites, onSalvar }: Props) {
     setErro(null)
   }
 
-  const inputStyle: React.CSSProperties = { width: 46, padding: '4px 6px', textAlign: 'center', fontSize: 12 }
+  const inputStyle: React.CSSProperties = { width: 52, padding: '4px 6px', textAlign: 'center', fontSize: 16 }
 
   const linhas: { nome: string; valor: FaixaHorario; set: (f: FaixaHorario) => void }[] = [
     { nome: 'Madrugada', valor: madrugada, set: setMadrugada },

@@ -18,6 +18,7 @@ export default function CurvaABCSecao({ inicio, fim }: Props) {
   const [carregando, setCarregando] = useState(true)
   const [expandido, setExpandido] = useState(false)
   const [filtroGrupo, setFiltroGrupo] = useState<'todos' | 'A' | 'B' | 'C'>('todos')
+  const [explicacaoAberta, setExplicacaoAberta] = useState(false)
 
   useEffect(() => {
     setCarregando(true)
@@ -35,8 +36,56 @@ export default function CurvaABCSecao({ inicio, fim }: Props) {
 
   return (
     <div style={{ marginBottom: 24 }}>
-      <p className="section-title">Curva ABC</p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+        <p className="section-title" style={{ marginBottom: 0 }}>Curva ABC</p>
+        <button
+          onClick={() => setExplicacaoAberta(true)}
+          aria-label="O que é curva ABC?"
+          style={{ border: '1px solid var(--line-strong)', background: 'var(--panel-2)', color: 'var(--cyan)', cursor: 'pointer', fontSize: 11, width: 18, height: 18, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+        >
+          ?
+        </button>
+      </div>
       <p className="subtitle">Quais produtos realmente sustentam a receita</p>
+
+      {explicacaoAberta && (
+        <div onClick={() => setExplicacaoAberta(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 20 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--panel)', border: '1px solid var(--line-strong)', borderRadius: 14, padding: 20, maxWidth: 400, width: '100%', maxHeight: '85vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <h3 style={{ fontSize: 16, fontWeight: 500 }}>O que é curva ABC?</h3>
+              <button onClick={() => setExplicacaoAberta(false)} style={{ border: 'none', background: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: 20, padding: 0, lineHeight: 1 }}>×</button>
+            </div>
+
+            <div style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--text)' }}>
+              <p style={{ marginBottom: 10 }}>
+                É uma forma de agrupar seus produtos por importância, do mais pro menos importante:
+              </p>
+
+              <p style={{ marginBottom: 8 }}>
+                <span style={{ color: 'var(--green)', fontWeight: 500 }}>Grupo A:</span> os produtos que juntos geram <b>80% da sua receita</b>. Geralmente são poucos (uns 20% do total). São seus "carro-chefe".
+              </p>
+              <p style={{ marginBottom: 8 }}>
+                <span style={{ color: 'var(--cyan)', fontWeight: 500 }}>Grupo B:</span> os que geram os <b>15% seguintes</b>. Importância média — mantém o giro do negócio.
+              </p>
+              <p style={{ marginBottom: 14 }}>
+                <span style={{ color: 'var(--text-dim)', fontWeight: 500 }}>Grupo C:</span> os que geram só os <b>5% restantes</b>. Muitos produtos, pouco impacto na receita.
+              </p>
+
+              <p style={{ marginBottom: 10, color: 'var(--text-dim)' }}>
+                <b style={{ color: 'var(--text)' }}>Exemplo no mercadinho:</b> se você vende 40 produtos, é bem provável que uns 8 (cerveja, refrigerante 2L, salgadinho…) sozinhos representem 80% do faturamento. Se algum desses acabar, é problema sério. Já os 20 com menor giro — se acabar um, quase não afeta.
+              </p>
+
+              <p style={{ color: 'var(--text-dim)' }}>
+                <b style={{ color: 'var(--text)' }}>Por que serve?</b> Ajuda a saber onde focar atenção: repor o grupo A primeiro, não desperdiçar dinheiro comprando C demais, negociar melhor com fornecedores dos A.
+              </p>
+            </div>
+
+            <button onClick={() => setExplicacaoAberta(false)} className="btn-primary" style={{ width: '100%', padding: 10, marginTop: 16, fontSize: 13 }}>
+              Entendi
+            </button>
+          </div>
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 14 }}>
         <div className="card" style={{ padding: 10, textAlign: 'center', borderLeft: '3px solid var(--green)' }}>

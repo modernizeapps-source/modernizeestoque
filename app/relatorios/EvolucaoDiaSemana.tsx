@@ -12,7 +12,6 @@ const PERIODOS = [
   { id: '3', nome: '3M', meses: 3 },
   { id: '6', nome: '6M', meses: 6 },
   { id: '12', nome: '12M', meses: 12 },
-  { id: 'tudo', nome: 'Tudo', meses: 60 },
 ]
 
 function reais(v: number) { return `R$ ${v.toFixed(0)}` }
@@ -123,7 +122,7 @@ export default function EvolucaoDiaSemana() {
         <p style={{ fontSize: 13, color: 'var(--text-dim)' }}>Carregando...</p>
       ) : (
         <>
-          <svg viewBox={`-10 -22 ${largura + 20} ${altura + 44}`} style={{ width: '100%', height: 150 }}>
+          <svg viewBox={`-25 -26 ${largura + 50} ${altura + 48}`} style={{ width: '100%', height: 150 }}>
             {compararAnoAnterior && (
               <>
                 <polyline points={linhaAnterior} fill="none" stroke="#ffb454" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" strokeDasharray="4,3" opacity={0.7} />
