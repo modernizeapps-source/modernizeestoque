@@ -54,7 +54,7 @@ export default function EvolucaoDiaSemana() {
         <p style={{ fontSize: 13, color: 'var(--text-dim)' }}>Carregando...</p>
       ) : (
         <>
-          <svg viewBox={`-10 -18 ${largura + 20} ${altura + 30}`} style={{ width: '100%', height: 130 }}>
+          <svg viewBox={`-10 -18 ${largura + 20} ${altura + 40}`} style={{ width: '100%', height: 140 }}>
             <polyline points={linhaSvg} fill="none" stroke="#4fd8ff" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
             {coordenadas.map((c, i) => (
               <g key={i}>
@@ -66,12 +66,4 @@ export default function EvolucaoDiaSemana() {
           </svg>
 
           {primeiro && ultimo && primeiro.total > 0 && (
-            <div style={{ marginTop: 6, padding: '11px 13px', borderRadius: 12, border: '1px solid var(--line-strong)', background: 'rgba(79,216,255,0.06)', fontSize: 12, color: 'var(--cyan)' }}>
-              {cresceu ? '↑' : '↓'} As {DIAS.find((d) => d.id === diaSelecionado)?.nome}-feiras {cresceu ? 'cresceram' : 'caíram'}: de {reais(primeiro.total)} em {primeiro.label} pra {reais(ultimo.total)} em {ultimo.label}.
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  )
-}
+            <div style={{ marginTop: 6, padding: '11px 13px', borderRadius: 12, border: '1px solid var(--line-strong)',
