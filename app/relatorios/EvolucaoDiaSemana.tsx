@@ -66,4 +66,12 @@ export default function EvolucaoDiaSemana() {
           </svg>
 
           {primeiro && ultimo && primeiro.total > 0 && (
-            <div style={{ marginTop: 6, padding: '11px 13px', borderRadius: 12, border: '1px solid var(--line-strong)',
+            <div style={{ marginTop: 6, padding: '11px 13px', borderRadius: 12, border: '1px solid var(--line-strong)', background: 'rgba(79,216,255,0.06)', fontSize: 12, color: 'var(--cyan)' }}>
+              {cresceu ? '↑' : '↓'} As {DIAS.find((d) => d.id === diaSelecionado)?.nome}-feiras {cresceu ? 'cresceram' : 'caíram'}: de {reais(primeiro.total)} em {primeiro.label} pra {reais(ultimo.total)} em {ultimo.label}.
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )
+}

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { LimitesPeriodo, LIMITES_PADRAO } from '@/lib/supabase/relatorios'
+import { LimitesPeriodo, LIMITES_PADRAO, FaixaHorario } from '@/lib/supabase/relatorios'
 
 const CHAVE_STORAGE = 'estoque-mercadinho:limites-periodo'
 
@@ -11,7 +11,7 @@ export function lerLimitesPeriodo(): LimitesPeriodo {
     const salvo = window.localStorage.getItem(CHAVE_STORAGE)
     if (!salvo) return LIMITES_PADRAO
     const parsed = JSON.parse(salvo)
-    if (typeof parsed.manha === 'number' && typeof parsed.tarde === 'number' && typeof parsed.noite === 'number') return parsed
+    if (parsed && parsed.madrugada && parsed.manha && parsed.tarde && parsed.noite) return parsed
     return LIMITES_PADRAO
   } catch {
     return LIMITES_PADRAO
@@ -20,23 +20,23 @@ export function lerLimitesPeriodo(): LimitesPeriodo {
 
 type Props = { limites: LimitesPeriodo; onSalvar: (novos: LimitesPeriodo) => void }
 
-function h(n: number) {
-  return `${String(n).padStart(2, '0')}h`
-}
-
 export default function ConfigPeriodosDia({ limites, onSalvar }: Props) {
   const [aberto, setAberto] = useState(false)
-  const [manha, setManha] = useState(limites.manha)
-  const [tarde, setTarde] = useState(limites.tarde)
-  const [noite, setNoite] = useState(limites.noite)
+  const [madrugada, setMadrugada] = useState<FaixaHorario>(limites.madrugada)
+  const [manha, setManha] = useState<FaixaHorario>(limites.manha)
+  const [tarde, setTarde] = useState<FaixaHorario>(limites.tarde)
+  const [noite, setNoite] = useState<FaixaHorario>(limites.noite)
   const [erro, setErro] = useState<string | null>(null)
 
   function handleSalvar() {
-    if (!(0 < manha && manha < tarde && tarde < noite && noite < 24)) {
-      setErro('Os horários precisam estar em ordem crescente (manhã < tarde < noite).')
-      return
+    const linhas = [madrugada, manha, tarde, noite]
+    for (const l of linhas) {
+      if (!(l.inicio >= 0 && l.fim <= 24 && l.inicio < l.fim)) {
+        setErro('Cada período precisa ter início antes do fim, entre 0 e 24.')
+        return
+      }
     }
-    const novos = { manha, tarde, noite }
+    const novos = { madrugada, manha, tarde, noite }
     window.localStorage.setItem(CHAVE_STORAGE, JSON.stringify(novos))
     onSalvar(novos)
     setAberto(false)
@@ -44,6 +44,13 @@ export default function ConfigPeriodosDia({ limites, onSalvar }: Props) {
   }
 
   const inputStyle: React.CSSProperties = { width: 46, padding: '4px 6px', textAlign: 'center', fontSize: 12 }
+
+  const linhas: { nome: string; valor: FaixaHorario; set: (f: FaixaHorario) => void }[] = [
+    { nome: 'Madrugada', valor: madrugada, set: setMadrugada },
+    { nome: 'Manhã', valor: manha, set: setManha },
+    { nome: 'Tarde', valor: tarde, set: setTarde },
+    { nome: 'Noite', valor: noite, set: setNoite },
+  ]
 
   return (
     <div style={{ position: 'relative', display: 'inline-block' }}>
@@ -59,33 +66,14 @@ export default function ConfigPeriodosDia({ limites, onSalvar }: Props) {
         <div style={{ position: 'absolute', top: '120%', right: 0, zIndex: 20, background: 'var(--panel)', border: '1px solid var(--line-strong)', borderRadius: 12, padding: 14, width: 260 }}>
           <p style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 12 }}>Início e fim de cada período</p>
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 9 }}>
-            <span style={{ fontSize: 12, width: 74 }}>Madrugada</span>
-            <span className="mono" style={{ fontSize: 12, color: 'var(--text-dim)' }}>{h(0)}</span>
-            <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>até</span>
-            <input type="number" min={1} max={23} value={manha} onChange={(e) => setManha(Number(e.target.value))} className="input mono" style={inputStyle} />
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 9 }}>
-            <span style={{ fontSize: 12, width: 74 }}>Manhã</span>
-            <span className="mono" style={{ fontSize: 12, color: 'var(--text-dim)' }}>{h(manha)}</span>
-            <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>até</span>
-            <input type="number" min={1} max={23} value={tarde} onChange={(e) => setTarde(Number(e.target.value))} className="input mono" style={inputStyle} />
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 9 }}>
-            <span style={{ fontSize: 12, width: 74 }}>Tarde</span>
-            <span className="mono" style={{ fontSize: 12, color: 'var(--text-dim)' }}>{h(tarde)}</span>
-            <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>até</span>
-            <input type="number" min={1} max={23} value={noite} onChange={(e) => setNoite(Number(e.target.value))} className="input mono" style={inputStyle} />
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <span style={{ fontSize: 12, width: 74 }}>Noite</span>
-            <span className="mono" style={{ fontSize: 12, color: 'var(--text-dim)' }}>{h(noite)}</span>
-            <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>até</span>
-            <span className="mono" style={{ fontSize: 12, color: 'var(--text-dim)', width: 46, textAlign: 'center' }}>24h</span>
-          </div>
+          {linhas.map((l) => (
+            <div key={l.nome} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 9 }}>
+              <span style={{ fontSize: 12, width: 74 }}>{l.nome}</span>
+              <input type="number" min={0} max={24} value={l.valor.inicio} onChange={(e) => l.set({ ...l.valor, inicio: Number(e.target.value) })} className="input mono" style={inputStyle} />
+              <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>até</span>
+              <input type="number" min={0} max={24} value={l.valor.fim} onChange={(e) => l.set({ ...l.valor, fim: Number(e.target.value) })} className="input mono" style={inputStyle} />
+            </div>
+          ))}
 
           {erro && <p className="error-text" style={{ fontSize: 11, marginBottom: 8 }}>{erro}</p>}
 

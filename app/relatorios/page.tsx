@@ -101,6 +101,7 @@ export default function RelatoriosPage() {
             </div>
           </div>
 
+          {/* Total por dia da semana */}
           <p className="section-title" style={{ marginBottom: 2 }}>Total por dia da semana</p>
           <p className="subtitle">Soma de todas as ocorrências do período</p>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 110, marginBottom: 4 }}>
@@ -114,6 +115,7 @@ export default function RelatoriosPage() {
           </div>
           <div style={{ height: 20 }} />
 
+          {/* Por período do dia */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <p className="section-title" style={{ marginBottom: 0 }}>Por período do dia</p>
             <ConfigPeriodosDia limites={limitesPeriodo} onSalvar={setLimitesPeriodo} />
@@ -133,6 +135,7 @@ export default function RelatoriosPage() {
           <EvolucaoDiaSemana />
           <FechamentoMensal />
 
+          {/* Lucro por categoria */}
           <p className="section-title">Lucro por categoria</p>
           <div className="card" style={{ marginBottom: 24 }}>
             {relatorio.porCategoria.length === 0 && <p style={{ fontSize: 13, color: 'var(--text-dim)' }}>Sem vendas nesse período.</p>}
@@ -160,6 +163,7 @@ export default function RelatoriosPage() {
             )}
           </div>
 
+          {/* Produtos */}
           <p className="section-title">Produtos</p>
           <div className="card" style={{ marginBottom: 24 }}>
             <p className="mono" style={{ fontSize: 9.5, color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: 8 }}>Mais vendidos</p>
@@ -183,6 +187,7 @@ export default function RelatoriosPage() {
             ))}
           </div>
 
+          {/* Formas de pagamento */}
           <p className="section-title">Formas de pagamento</p>
           <div>
             {relatorio.formasPagamento.length === 0 && <p style={{ fontSize: 13, color: 'var(--text-dim)' }}>Sem vendas nesse período.</p>}
