@@ -26,12 +26,17 @@ function montarResumoItens(itens: { quantidade: number; nome: string }[]): strin
   return texto.length > LIMITE ? texto.slice(0, LIMITE).trimEnd() + '...' : texto
 }
 
-export async function listarVendas(): Promise<VendaResumo[]> {
+export async function listarVendas(inicio?: string, fim?: string): Promise<VendaResumo[]> {
   const supabase = createClient()
-  const { data: vendas, error } = await supabase
+  let query = supabase
     .from('vendas')
     .select('id, data_hora, valor_total, forma_pagamento, status')
     .order('data_hora', { ascending: false })
+
+  if (inicio) query = query.gte('data_hora', inicio)
+  if (fim) query = query.lt('data_hora', fim)
+
+  const { data: vendas, error } = await query
   if (error) throw error
 
   const vendaIds = (vendas ?? []).map((v) => v.id)
