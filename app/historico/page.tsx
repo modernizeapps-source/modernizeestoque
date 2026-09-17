@@ -3,28 +3,82 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { listarVendas, VendaResumo, FORMA_PAGAMENTO_LABEL } from '@/lib/supabase/historico'
+import CalendarioPeriodo from '../relatorios/CalendarioPeriodo'
 
 function reais(v: number) {
   return `R$ ${v.toFixed(2).replace('.', ',')}`
+}
+
+function formatarDataCurta(d: Date) {
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'UTC' })
 }
 
 export default function HistoricoPage() {
   const [vendas, setVendas] = useState<VendaResumo[]>([])
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState<string | null>(null)
+  const [filtroLabel, setFiltroLabel] = useState('Todas as vendas')
+  const [range, setRange] = useState<{ inicio?: string; fim?: string }>({})
+  const [seletorAberto, setSeletorAberto] = useState(false)
 
   useEffect(() => {
-    listarVendas().then(setVendas).catch(() => setErro('Não foi possível carregar o histórico.')).finally(() => setCarregando(false))
-  }, [])
+    setCarregando(true)
+    listarVendas(range.inicio, range.fim)
+      .then(setVendas)
+      .catch(() => setErro('Não foi possível carregar o histórico.'))
+      .finally(() => setCarregando(false))
+  }, [range])
+
+  function handleSelecionarPeriodo(inicioDia: Date, fimDia: Date) {
+    const fmt = (d: Date, horaFim: boolean) => {
+      const base = new Date(d)
+      if (horaFim) base.setUTCDate(base.getUTCDate() + 1)
+      const y = base.getUTCFullYear()
+      const m = String(base.getUTCMonth() + 1).padStart(2, '0')
+      const dd = String(base.getUTCDate()).padStart(2, '0')
+      return `${y}-${m}-${dd}T00:00:00-03:00`
+    }
+    setRange({ inicio: fmt(inicioDia, false), fim: fmt(fimDia, true) })
+
+    const mesmodia = inicioDia.getTime() === fimDia.getTime()
+    if (mesmodia) setFiltroLabel(formatarDataCurta(inicioDia))
+    else setFiltroLabel(`${formatarDataCurta(inicioDia)} – ${formatarDataCurta(fimDia)}`)
+
+    setSeletorAberto(false)
+  }
+
+  function limparFiltro() {
+    setRange({})
+    setFiltroLabel('Todas as vendas')
+  }
 
   return (
     <div className="container">
       <Link href="/" className="back-link">← Voltar</Link>
       <h1 style={{ fontSize: 20, fontWeight: 500, marginBottom: 16 }}>Histórico de vendas</h1>
 
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+        <button onClick={() => setSeletorAberto(true)} className="btn-primary" style={{ padding: '8px 14px', fontSize: 13 }}>
+          📅 {filtroLabel} ▾
+        </button>
+        {range.inicio && (
+          <button onClick={limparFiltro} className="btn-secondary" style={{ padding: '8px 14px', fontSize: 13 }}>
+            Limpar
+          </button>
+        )}
+      </div>
+
+      {seletorAberto && (
+        <CalendarioPeriodo onSelecionar={handleSelecionarPeriodo} onFechar={() => setSeletorAberto(false)} />
+      )}
+
       {carregando && <p style={{ color: 'var(--text-dim)', fontSize: 14 }}>Carregando...</p>}
       {erro && <p className="error-text">{erro}</p>}
-      {!carregando && !erro && vendas.length === 0 && <p style={{ color: 'var(--text-dim)', fontSize: 14 }}>Nenhuma venda registrada ainda.</p>}
+      {!carregando && !erro && vendas.length === 0 && (
+        <p style={{ color: 'var(--text-dim)', fontSize: 14 }}>
+          {range.inicio ? 'Nenhuma venda encontrada nesse período.' : 'Nenhuma venda registrada ainda.'}
+        </p>
+      )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {vendas.map((v) => {
