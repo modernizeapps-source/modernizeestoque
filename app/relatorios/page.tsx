@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { buscarRelatorio, inicioFimPeriodo, Relatorio, LimitesPeriodo, LIMITES_PADRAO } from '@/lib/supabase/relatorios'
 import CalendarioPeriodo from './CalendarioPeriodo'
+import CurvaABC from './CurvaABC'
 import EvolucaoDiaSemana from './EvolucaoDiaSemana'
 import FechamentoMensal from './FechamentoMensal'
 import ConfigPeriodosDia, { lerLimitesPeriodo } from './ConfigPeriodosDia'
@@ -134,6 +135,8 @@ export default function RelatoriosPage() {
 
           <EvolucaoDiaSemana />
           <FechamentoMensal />
+
+          <CurvaABC inicio={range.inicio} fim={range.fim} />
 
           {/* Lucro por categoria */}
           <p className="section-title">Lucro por categoria</p>
