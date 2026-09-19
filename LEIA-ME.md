@@ -1,114 +1,69 @@
-# Estoque Mercadinho — Fase 1: Caixa, Pagamentos e Código de Barras
+# Estoque Mercadinho — Pacote 2 (correções + taxas)
 
-## O banco de dados já foi atualizado
+## Nada pra configurar desta vez
 
-Diferente das vezes anteriores, desta vez eu já criei as tabelas e funções novas
-diretamente no seu banco de dados do Supabase (você não precisa copiar e colar
-nenhum SQL lá). Só falta configurar 3 coisas antes de tudo funcionar de verdade,
-explicadas no próximo passo.
+O banco de dados já foi atualizado por mim. As variáveis do Netlify continuam
+as mesmas do pacote anterior — não precisa mexer em nada lá.
 
-## Passo 1 — Variáveis novas no Netlify
+É só subir os arquivos no GitHub e rodar o deploy:
+**Netlify → Deploys → Trigger deploy → Deploy project without cache**
 
-Vá em **Netlify → seu site → Site settings → Environment variables** e adicione
-estas 4 variáveis (além das 2 que já existiam):
+## O que mudou neste pacote
 
-| Nome | O que é | Onde conseguir |
-|---|---|---|
-| `SUPABASE_SERVICE_ROLE_KEY` | Uma chave "mestra" do Supabase, usada só pelo servidor (nunca aparece pro cliente) | Painel do Supabase → **Project Settings → API** → copie a chave em **service_role** (não é a mesma chave "anon" que você já usa) |
-| `INFINITEPAY_HANDLE` | O "@" do Misa no app da InfinitePay, **sem** o cifrão `$` na frente | Abra o app da InfinitePay do Misa, o handle aparece no canto superior esquerdo |
-| `COSMOS_API_TOKEN` | Token pra busca automática de produto por código de barras (opcional) | Veja o Passo 3 abaixo — se não configurar, essa busca automática simplesmente não funciona, mas o resto do sistema funciona normal |
-| `NEXT_PUBLIC_SITE_URL` | O endereço do seu site publicado | `https://modernizeestoque.netlify.app` |
+### 1. Nova tela: Configurações (taxas)
+Botão novo na tela inicial. Serve pra cadastrar a taxa que a maquininha/banco
+cobra em cada forma de pagamento (crédito, débito, Pix...). O lucro em todos os
+relatórios passa a descontar essas taxas automaticamente, mostrando quanto
+realmente sobra.
 
-Depois de adicionar, vá em **Deploys → Trigger deploy → Deploy project without
-cache** pra aplicar.
+Começa tudo zerado — **preencha com as taxas reais do contrato do Misa** pra
+que o lucro fique correto. No card de Lucro dos relatórios aparece, em letra
+pequena, quanto foi descontado de taxa no período.
 
-## Passo 2 — Habilitar o Checkout Integrado na InfinitePay
+### 2. Pagamento misto agora funciona
+Antes, toda forma de pagamento cobrava o valor cheio da venda — na prática o
+pagamento dividido não funcionava. Agora, na tela de finalizar venda, existe um
+campo **"Quanto pagar agora"**: deixe vazio pra cobrar tudo numa forma só, ou
+preencha um valor menor pra dividir. Depois de confirmar a primeira parte, o
+sistema mostra quanto falta e você escolhe a segunda forma.
 
-Isso é o que permite o sistema gerar o QR Code do Pix automático. O Misa precisa
-fazer isso (é a conta dele):
+### 3. Seletor de período no Lucro por categoria
+A seção agora tem um seletor próprio, pequeno, ao lado do título. Por padrão ele
+acompanha o filtro do topo do relatório (fica em cinza). Se você escolher um
+período ali (Esta semana / Este mês / 3 meses / 6 meses / 1 ano / datas
+específicas), a seção passa a andar sozinha e o seletor fica azul. Tem a opção
+"↺ Seguir o filtro do topo" pra voltar ao normal.
 
-1. Abrir o app da InfinitePay (ou o site: app.infinitepay.io)
-2. Ir na aba **Vendas** → deslizar até **Checkout**
-3. Ir em **Configurações** → tocar em **Habilitar Checkout Integrado**
+### 4. Seção "Produtos" removida dos relatórios
+Ela mostrava mais/menos vendidos, o que a Curva ABC já faz melhor.
 
-Sem isso, o Pix automático não vai funcionar — mas dinheiro, Pix manual e cartão
-na maquininha funcionam normalmente de qualquer forma.
+### 5. Texto da sangria corrigido
+Antes aparecia "Estorno da venda ae102ad3-e876-..." (código interno ilegível).
+Agora aparece "Estorno de venda — <motivo que você digitou>".
 
-## Passo 3 (opcional) — Token do Cosmos
+### 6. Correção extra que encontrei
+Quando você abria o carrinho e fechava sem pagar, a venda ficava "pendurada"
+no sistema como aguardando pagamento, pra sempre. Agora ela é descartada
+automaticamente. (Já limpei a que tinha ficado dos seus testes.)
 
-O Cosmos é o catálogo que preenche o nome do produto sozinho ao escanear um
-código de barras novo. Pra ativar:
+## Roteiro de teste
 
-1. Acesse `https://cosmos.bluesoft.com.br/`
-2. Crie uma conta e pegue o seu token de acesso
-3. Cole esse token na variável `COSMOS_API_TOKEN` no Netlify (Passo 1)
+1. **Configurações** → preenche as taxas (ex: crédito 3,5 / débito 1,5) e salva
+2. **Relatórios** → confere se o card de Lucro agora mostra "já sem R$ X de taxas"
+3. **Relatórios** → testa o seletor pequeno do Lucro por categoria
+4. **Relatórios** → confere que a seção "Produtos" sumiu
+5. **Venda** → monta um carrinho, em "Quanto pagar agora" coloca menos que o
+   total, paga em dinheiro, e depois completa o restante no Pix
+6. **Venda** → abre o carrinho e fecha sem pagar; confere no Histórico que ela
+   não ficou como "aguardando"
+7. **Leitor de código de barras** (quando pegar com o Misa): conecta no USB,
+   abre Nova venda e escaneia — deve avisar "código não cadastrado" com atalho
+   pra cadastrar
 
-Se você pular esse passo por enquanto, tudo bem — o cadastro de produto
-continua funcionando, só não vem com o nome pré-preenchido.
+## Ainda pendente
 
-## Como testar no seu computador
-
-Igual sempre: extraia o zip, `cd` até a pasta, rode `npm install` (dessa vez é
-importante rodar de novo, porque adicionei uma ferramenta nova pro QR Code) e
-depois `npm run dev`.
-
-## O que veio nesta etapa
-
-### Caixa
-- Tela nova **Caixa** (botão na tela inicial): abre o caixa informando o valor
-  inicial, permite registrar reforço/sangria durante o dia, e fechar no final
-  comparando o valor esperado com o valor contado
-- Não dá mais pra vender sem um caixa aberto — a tela de Venda avisa e te
-  manda abrir o caixa primeiro
-- **Histórico de caixa** (dentro da tela Caixa) mostra os fechamentos
-  anteriores
-
-### Pagamentos
-- A tela de Venda agora tem 4 formas de pagamento: Dinheiro (com troco), Pix
-  com sua própria chave (confirmação manual), Cartão na maquininha (registra
-  bandeira e crédito/débito) e **Pix automático** (gera QR Code de verdade via
-  InfinitePay e confirma sozinho quando o cliente paga)
-- Dá pra dividir uma venda em mais de uma forma de pagamento (ex: metade
-  dinheiro, metade Pix) — é só ir escolhendo uma forma de cada vez até
-  completar o valor
-- O estoque só é descontado depois que o pagamento é confirmado de verdade,
-  nunca antes
-
-### Código de barras
-- Comprou um leitor USB? Basta conectar — ele funciona como um teclado, sem
-  instalar nada
-- Na tela de Venda: aponte o leitor pro produto e ele entra na venda sozinho.
-  Se o código não estiver cadastrado, aparece um aviso com atalho pra cadastrar
-  na hora
-- Na tela de Novo produto: escaneie o código pra preencher o campo sozinho —
-  se o produto for reconhecido pelo Cosmos, o nome/marca já vêm preenchidos
-
-### Cancelamento e estorno
-- Cancelar uma venda que ainda não foi paga é diferente de estornar uma venda
-  já paga — o sistema trata cada caso e pede o motivo
-- Você escolhe se os produtos voltam pro estoque no estorno
-- Estorno de dinheiro é registrado automaticamente como saída no caixa;
-  estorno de Pix/cartão fica marcado como pendente pra você fazer manualmente
-  no app da InfinitePay
-
-## Roteiro de teste sugerido
-
-1. Vá em **Caixa** e abra um caixa de teste com R$ 50,00
-2. Vá em **Venda**, adicione 1 ou 2 produtos, finalize com **Dinheiro** — confira
-   o cálculo do troco
-3. Faça outra venda e finalize com **Pix automático** — deve aparecer um QR Code
-   de verdade; escaneie com seu próprio celular pra testar um pagamento
-   pequeno de verdade (ou cancele antes de pagar, só pra ver se o QR aparece)
-4. Volte em **Caixa** e confira se o saldo esperado bateu
-5. Vá em **Produtos → Novo produto**, escaneie um código de barras de algum
-   produto de mercado que você tenha em casa e veja se o nome preenche sozinho
-   (só funciona se configurou o Cosmos)
-6. No **Histórico**, abra uma venda paga e teste o **Estornar venda**
-7. Feche o caixa em **Caixa → Fechar caixa**
-
-## O que ainda não está nesta etapa
-
-- Emissão de nota fiscal
-- Conciliação financeira automática
-- Multiempresa completo (a base já está preparada, mas não está ativado)
-- Estorno automático de Pix/cartão (fica marcado como pendente pra fazer manual)
+- **Pix automático**: depende do Misa ativar o "Checkout Integrado" no app da
+  InfinitePay (aba Vendas → Checkout → Configurações)
+- **Conciliação financeira**: comparar as vendas com o que a InfinitePay
+  realmente repassou. Depende de saber o que a API deles oferece
+- **Nota fiscal (NFC-e)** e **multiempresa**: etapas futuras

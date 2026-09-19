@@ -95,3 +95,16 @@ export async function listarPagamentosDaVenda(vendaId: string): Promise<Pagament
   if (error) throw error
   return (data as any) ?? []
 }
+
+// Descarta uma venda que foi iniciada mas nunca teve pagamento (o cliente
+// desistiu antes de pagar). Como nada foi pago e o estoque nem chegou a ser
+// baixado, ela é só marcada como cancelada.
+export async function cancelarVendaNaoPaga(vendaId: string): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase.rpc('cancelar_venda', {
+    p_venda_id: vendaId,
+    p_motivo: 'Venda não finalizada',
+    p_retorna_estoque: false,
+  })
+  if (error) throw error
+}

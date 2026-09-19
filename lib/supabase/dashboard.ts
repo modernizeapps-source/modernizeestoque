@@ -1,4 +1,5 @@
 import { createClient } from './client'
+import { buscarTaxas, taxaDoPagamento } from './configuracoes'
 
 export type ResumoHoje = {
   totalVendido: number
@@ -59,19 +60,34 @@ export async function buscarResumoHoje(): Promise<ResumoHoje> {
   // Calcula por forma de pagamento a partir da tabela `pagamentos` (não de
   // vendas.forma_pagamento), porque uma venda pode ter mais de um pagamento
   // (pagamento misto) — assim cada forma conta só a sua parte de verdade.
+  // O mesmo levantamento serve pra descontar as taxas de maquininha do lucro.
+  const taxas = await buscarTaxas()
   const porForma: Record<string, number> = {}
+  let taxasTotal = 0
   if (vendaIds.length > 0) {
     const { data: pagamentos, error: erroPagamentos } = await supabase
       .from('pagamentos')
-      .select('forma, valor, venda_id')
+      .select('forma, valor, venda_id, tipo_cartao')
       .in('venda_id', vendaIds)
       .eq('status', 'confirmado')
     if (erroPagamentos) throw erroPagamentos
 
-    for (const p of pagamentos ?? []) {
+    const vendasComPagamento = new Set<string>()
+    for (const p of (pagamentos as any[]) ?? []) {
       porForma[p.forma] = (porForma[p.forma] ?? 0) + Number(p.valor)
+      vendasComPagamento.add(p.venda_id)
+      taxasTotal += Number(p.valor) * (taxaDoPagamento(taxas, p.forma, p.tipo_cartao) / 100)
+    }
+
+    // Vendas antigas, anteriores ao módulo de pagamentos
+    for (const v of vendas ?? []) {
+      if (vendasComPagamento.has(v.id)) continue
+      porForma[v.forma_pagamento] = (porForma[v.forma_pagamento] ?? 0) + Number(v.valor_total)
+      taxasTotal += v.valor_total * (taxaDoPagamento(taxas, v.forma_pagamento) / 100)
     }
   }
+  lucro = lucro - taxasTotal
+
   const formasPagamento = Object.entries(porForma)
     .map(([forma, valor]) => ({ forma, valor, percentual: totalVendido > 0 ? (valor / totalVendido) * 100 : 0 }))
     .sort((a, b) => b.valor - a.valor)

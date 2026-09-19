@@ -126,6 +126,7 @@ export default function HomePage() {
         <Link href="/historico" className="btn-secondary">Histórico</Link>
         <Link href="/produtos" className="btn-secondary">Produtos</Link>
         <Link href="/relatorios" className="btn-secondary">Relatórios</Link>
+        <Link href="/configuracoes" className="btn-secondary">Configurações</Link>
       </div>
     </div>
   )

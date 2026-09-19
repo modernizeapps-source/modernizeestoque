@@ -9,6 +9,7 @@ import {
   adicionarPagamentoConfirmado,
   adicionarPagamentoPendente,
   confirmarPagamentoPendente,
+  cancelarVendaNaoPaga,
   ItemCarrinho,
 } from '@/lib/supabase/vendas'
 import { buscarCaixaAberto, CaixaSessao } from '@/lib/supabase/caixa'
@@ -57,6 +58,10 @@ export default function VendaPage() {
   // pagamento em dinheiro
   const [valorRecebido, setValorRecebido] = useState('')
 
+  // quanto dessa venda vai ser pago na forma escolhida agora (pagamento misto).
+  // Vazio = o valor restante inteiro.
+  const [valorParcial, setValorParcial] = useState('')
+
   // pagamento na maquininha
   const [bandeira, setBandeira] = useState('')
   const [tipoCartao, setTipoCartao] = useState<'credito' | 'debito'>('credito')
@@ -65,6 +70,9 @@ export default function VendaPage() {
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null)
   const [qrCodeImagem, setQrCodeImagem] = useState<string | null>(null)
   const [pagamentoPixId, setPagamentoPixId] = useState<string | null>(null)
+  // valor que foi efetivamente cobrado no QR gerado (fica fixo enquanto o
+  // cliente paga, mesmo que a tela recalcule outras coisas)
+  const [valorPixCobrado, setValorPixCobrado] = useState(0)
 
   async function carregarDados() {
     setCarregando(true)
@@ -99,6 +107,13 @@ export default function VendaPage() {
   const totalItens = itensCarrinho.reduce((soma, i) => soma + i.quantidade, 0)
   const totalValor = itensCarrinho.reduce((soma, i) => soma + i.quantidade * i.produto.preco_venda, 0)
   const valorRestante = Math.max(0, Math.round((totalValor - valorPago) * 100) / 100)
+
+  // Valor a cobrar na forma escolhida agora: o que o usuário digitou como
+  // parcial, ou o restante inteiro se ele não digitou nada.
+  const valorParcialNum = parseFloat(valorParcial.replace(',', '.') || '0')
+  const valorACobrar = valorParcial.trim() !== '' && valorParcialNum > 0
+    ? Math.round(Math.min(valorParcialNum, valorRestante) * 100) / 100
+    : valorRestante
 
   function alterarQuantidade(produtoId: string, delta: number) {
     setCarrinho((prev) => {
@@ -154,11 +169,21 @@ export default function VendaPage() {
     }
   }
 
-  function fecharCheckoutSemPagar() {
+  async function fecharCheckoutSemPagar() {
+    // Se a venda foi criada mas nenhum pagamento entrou, ela é descartada —
+    // senão ficaria pendurada como "aguardando pagamento" pra sempre.
+    if (vendaId && valorPago === 0) {
+      try {
+        await cancelarVendaNaoPaga(vendaId)
+      } catch (e) {
+        // se falhar, não trava o caixa — a venda aparece como aguardando no histórico
+      }
+    }
     setMostrarCheckout(false)
     setVendaId(null)
     setEtapa('escolhendo_forma')
     setErroCheckout(null)
+    setValorParcial('')
     setQrCodeUrl(null)
     setQrCodeImagem(null)
     setPagamentoPixId(null)
@@ -194,19 +219,21 @@ export default function VendaPage() {
       setQrCodeUrl(null)
       setQrCodeImagem(null)
       setPagamentoPixId(null)
+      setValorParcial('')
       await carregarDados()
       setTimeout(() => setSucesso(false), 2500)
     } else {
       // pagamento misto: falta cobrir o restante
+      setValorParcial('')
       setEtapa('escolhendo_forma')
     }
   }
 
   async function handleConfirmarDinheiro() {
     if (!vendaId) return
-    const recebido = parseFloat(valorRecebido || '0')
-    if (recebido < valorRestante) {
-      setErroCheckout('O valor recebido é menor que o valor restante.')
+    const recebido = parseFloat(valorRecebido.replace(',', '.') || '0')
+    if (recebido < valorACobrar) {
+      setErroCheckout('O valor recebido é menor que o valor a receber.')
       return
     }
     setProcessando(true)
@@ -215,11 +242,11 @@ export default function VendaPage() {
       await adicionarPagamentoConfirmado({
         venda_id: vendaId,
         forma: 'dinheiro',
-        valor: valorRestante,
+        valor: valorACobrar,
         valor_recebido: recebido,
-        troco: Math.round((recebido - valorRestante) * 100) / 100,
+        troco: Math.round((recebido - valorACobrar) * 100) / 100,
       })
-      await aposPagamentoConfirmado(valorRestante)
+      await aposPagamentoConfirmado(valorACobrar)
     } catch (e: any) {
       setErroCheckout(e?.message ?? 'Não foi possível registrar o pagamento.')
     } finally {
@@ -232,9 +259,9 @@ export default function VendaPage() {
     setProcessando(true)
     setErroCheckout(null)
     try {
-      const pagamentoId = await adicionarPagamentoPendente({ venda_id: vendaId, forma: 'pix_manual', valor: valorRestante })
+      const pagamentoId = await adicionarPagamentoPendente({ venda_id: vendaId, forma: 'pix_manual', valor: valorACobrar })
       await confirmarPagamentoPendente(pagamentoId)
-      await aposPagamentoConfirmado(valorRestante)
+      await aposPagamentoConfirmado(valorACobrar)
     } catch (e: any) {
       setErroCheckout(e?.message ?? 'Não foi possível confirmar o Pix.')
     } finally {
@@ -254,11 +281,11 @@ export default function VendaPage() {
       await adicionarPagamentoConfirmado({
         venda_id: vendaId,
         forma: 'cartao_maquininha',
-        valor: valorRestante,
+        valor: valorACobrar,
         bandeira: bandeira.trim(),
         tipo_cartao: tipoCartao,
       })
-      await aposPagamentoConfirmado(valorRestante)
+      await aposPagamentoConfirmado(valorACobrar)
     } catch (e: any) {
       setErroCheckout(e?.message ?? 'Não foi possível registrar o pagamento.')
     } finally {
@@ -276,13 +303,14 @@ export default function VendaPage() {
       const resp = await fetch('/api/pagamentos/pix-automatico/criar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ venda_id: vendaId, valor: valorRestante }),
+        body: JSON.stringify({ venda_id: vendaId, valor: valorACobrar }),
       })
       const dados = await resp.json()
       if (!resp.ok) throw new Error(dados.erro || 'Não foi possível gerar o QR Code.')
 
       setPagamentoPixId(dados.pagamento_id)
       setQrCodeUrl(dados.url)
+      setValorPixCobrado(valorACobrar)
 
       // gera a imagem do QR Code a partir do link, usando a biblioteca "qrcode"
       const QRCode = (await import('qrcode')).default
@@ -305,7 +333,7 @@ export default function VendaPage() {
         const dados = await resp.json()
         if (dados.status === 'confirmado') {
           clearInterval(intervalo)
-          await aposPagamentoConfirmado(valorRestante)
+          await aposPagamentoConfirmado(valorPixCobrado)
         }
       } catch (e) {
         // tenta de novo no próximo intervalo
@@ -420,6 +448,33 @@ export default function VendaPage() {
                   </div>
                 )}
 
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <label style={{ fontSize: 13 }}>Quanto pagar agora</label>
+                    {valorParcial.trim() !== '' && (
+                      <button
+                        onClick={() => setValorParcial('')}
+                        style={{ border: 'none', background: 'none', color: 'var(--cyan)', fontSize: 11, cursor: 'pointer', padding: 0 }}
+                      >
+                        usar o valor todo
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max={valorRestante}
+                    value={valorParcial}
+                    onChange={(e) => setValorParcial(e.target.value)}
+                    placeholder={`${reais(valorRestante)} (tudo)`}
+                    className="input"
+                  />
+                  <p style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 5 }}>
+                    Deixe vazio pra cobrar tudo numa forma só. Preencha só se o cliente for dividir entre duas formas.
+                  </p>
+                </div>
+
                 <p style={{ fontSize: 13, marginBottom: 8 }}>Forma de pagamento</p>
                 <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
                   {FORMAS_PAGAMENTO.map((f) => (
@@ -441,14 +496,14 @@ export default function VendaPage() {
               <>
                 <h2 style={{ fontSize: 16, fontWeight: 500, marginBottom: 14 }}>Pagamento em dinheiro</h2>
                 <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 4 }}>Valor a receber</p>
-                <p className="mono" style={{ fontSize: 22, color: 'var(--cyan)', marginBottom: 16 }}>{reais(valorRestante)}</p>
+                <p className="mono" style={{ fontSize: 22, color: 'var(--cyan)', marginBottom: 16 }}>{reais(valorACobrar)}</p>
 
                 <label className="label">Valor recebido do cliente</label>
                 <input type="number" step="0.01" value={valorRecebido} onChange={(e) => setValorRecebido(e.target.value)} placeholder="0,00" className="input" style={{ marginBottom: 10 }} />
 
-                {parseFloat(valorRecebido || '0') > valorRestante && (
+                {parseFloat(valorRecebido.replace(',', '.') || '0') > valorACobrar && (
                   <p style={{ fontSize: 13, marginBottom: 10 }}>
-                    Troco: <span className="mono" style={{ color: 'var(--green)' }}>{reais(parseFloat(valorRecebido || '0') - valorRestante)}</span>
+                    Troco: <span className="mono" style={{ color: 'var(--green)' }}>{reais(parseFloat(valorRecebido.replace(',', '.') || '0') - valorACobrar)}</span>
                   </p>
                 )}
 
@@ -467,7 +522,7 @@ export default function VendaPage() {
               <>
                 <h2 style={{ fontSize: 16, fontWeight: 500, marginBottom: 14 }}>Pix (sua chave)</h2>
                 <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 4 }}>Valor a receber</p>
-                <p className="mono" style={{ fontSize: 22, color: 'var(--cyan)', marginBottom: 16 }}>{reais(valorRestante)}</p>
+                <p className="mono" style={{ fontSize: 22, color: 'var(--cyan)', marginBottom: 16 }}>{reais(valorACobrar)}</p>
                 <p style={{ fontSize: 13, marginBottom: 16 }}>Mostre sua chave Pix (ou o QR do seu app) pro cliente. Quando o dinheiro cair na sua conta, confirme abaixo.</p>
 
                 {erroCheckout && <p className="error-text" style={{ marginBottom: 10 }}>{erroCheckout}</p>}
@@ -485,7 +540,7 @@ export default function VendaPage() {
               <>
                 <h2 style={{ fontSize: 16, fontWeight: 500, marginBottom: 14 }}>Cartão na maquininha</h2>
                 <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 4 }}>Valor a cobrar</p>
-                <p className="mono" style={{ fontSize: 22, color: 'var(--cyan)', marginBottom: 16 }}>{reais(valorRestante)}</p>
+                <p className="mono" style={{ fontSize: 22, color: 'var(--cyan)', marginBottom: 16 }}>{reais(valorACobrar)}</p>
                 <p style={{ fontSize: 13, marginBottom: 16 }}>Faça a cobrança na maquininha. Depois, registre aqui como foi pago.</p>
 
                 <label className="label">Bandeira</label>
@@ -512,7 +567,7 @@ export default function VendaPage() {
               <>
                 <h2 style={{ fontSize: 16, fontWeight: 500, marginBottom: 14 }}>Pix automático</h2>
                 <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 4 }}>Valor a receber</p>
-                <p className="mono" style={{ fontSize: 22, color: 'var(--cyan)', marginBottom: 16 }}>{reais(valorRestante)}</p>
+                <p className="mono" style={{ fontSize: 22, color: 'var(--cyan)', marginBottom: 16 }}>{reais(qrCodeImagem ? valorPixCobrado : valorACobrar)}</p>
 
                 {processando && !qrCodeImagem && <p style={{ fontSize: 13, color: 'var(--text-dim)' }}>Gerando QR Code...</p>}
 

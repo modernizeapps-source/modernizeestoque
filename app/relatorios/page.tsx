@@ -8,12 +8,17 @@ import CurvaABC from './CurvaABC'
 import EvolucaoDiaSemana from './EvolucaoDiaSemana'
 import FechamentoMensal from './FechamentoMensal'
 import ConfigPeriodosDia, { lerLimitesPeriodo } from './ConfigPeriodosDia'
+import LucroPorCategoria from './LucroPorCategoria'
 
 const FORMA_PAGAMENTO_LABEL: Record<string, string> = {
+  dinheiro: 'Dinheiro',
+  pix_manual: 'Pix',
+  pix_automatico: 'Pix automático',
+  cartao_maquininha: 'Cartão (maquininha)',
+  // formas antigas, de vendas registradas antes desta etapa
   pix: 'Pix',
   debito: 'Débito',
   credito: 'Crédito',
-  dinheiro: 'Dinheiro',
 }
 
 function reais(v: number) {
@@ -32,7 +37,6 @@ export default function RelatoriosPage() {
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState<string | null>(null)
   const [limitesPeriodo, setLimitesPeriodo] = useState<LimitesPeriodo>(LIMITES_PADRAO)
-  const [mostrarTodasCategorias, setMostrarTodasCategorias] = useState(false)
 
   useEffect(() => {
     setLimitesPeriodo(lerLimitesPeriodo())
@@ -91,6 +95,11 @@ export default function RelatoriosPage() {
             <div className="card">
               <div className="mono" style={{ fontSize: 10, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Lucro</div>
               <div className="mono" style={{ fontSize: 18, fontWeight: 500, marginTop: 6, color: 'var(--green)' }}>{reais(relatorio.lucro)}</div>
+              {relatorio.taxasTotal > 0 && (
+                <div className="mono" style={{ fontSize: 9.5, color: 'var(--text-dim)', marginTop: 4 }}>
+                  já sem {reais(relatorio.taxasTotal)} de taxas
+                </div>
+              )}
             </div>
             <div className="card">
               <div className="mono" style={{ fontSize: 10, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Vendas</div>
@@ -138,57 +147,7 @@ export default function RelatoriosPage() {
 
           <CurvaABC inicio={range.inicio} fim={range.fim} />
 
-          {/* Lucro por categoria */}
-          <p className="section-title">Lucro por categoria</p>
-          <div className="card" style={{ marginBottom: 24 }}>
-            {relatorio.porCategoria.length === 0 && <p style={{ fontSize: 13, color: 'var(--text-dim)' }}>Sem vendas nesse período.</p>}
-            {(mostrarTodasCategorias ? relatorio.porCategoria : relatorio.porCategoria.slice(0, 8)).map((c) => {
-              const maior = Math.max(...relatorio.porCategoria.map((x) => x.lucro), 1)
-              return (
-                <div key={c.nome} style={{ marginBottom: 11 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 5 }}>
-                    <span>{c.nome}</span>
-                    <span className="mono" style={{ color: 'var(--green)' }}>{reais(c.lucro)}</span>
-                  </div>
-                  <div style={{ height: 5, background: 'rgba(255,255,255,0.06)', borderRadius: 999, overflow: 'hidden' }}>
-                    <div style={{ width: `${(c.lucro / maior) * 100}%`, height: '100%', background: 'linear-gradient(90deg, var(--cyan), var(--green))' }} />
-                  </div>
-                </div>
-              )
-            })}
-            {relatorio.porCategoria.length > 8 && (
-              <button
-                onClick={() => setMostrarTodasCategorias(!mostrarTodasCategorias)}
-                style={{ border: 'none', background: 'none', color: 'var(--cyan)', fontSize: 12, cursor: 'pointer', padding: 0, marginTop: 4 }}
-              >
-                {mostrarTodasCategorias ? 'Ver menos' : `Ver todas (${relatorio.porCategoria.length})`}
-              </button>
-            )}
-          </div>
-
-          {/* Produtos */}
-          <p className="section-title">Produtos</p>
-          <div className="card" style={{ marginBottom: 24 }}>
-            <p className="mono" style={{ fontSize: 9.5, color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: 8 }}>Mais vendidos</p>
-            {relatorio.maisVendidos.length === 0 && <p style={{ fontSize: 13, color: 'var(--text-dim)' }}>Sem vendas nesse período.</p>}
-            {relatorio.maisVendidos.map((p, i) => (
-              <div key={p.nome} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid var(--line)', fontSize: 12 }}>
-                <span>{i + 1}. {p.nome}</span>
-                <span className="mono" style={{ color: 'var(--text-dim)' }}>{p.quantidade} un</span>
-                <span className="mono" style={{ color: 'var(--green)' }}>{reais(p.valor)}</span>
-              </div>
-            ))}
-
-            <div style={{ height: 12 }} />
-            <p className="mono" style={{ fontSize: 9.5, color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: 8 }}>Menos vendidos</p>
-            {relatorio.menosVendidos.map((p) => (
-              <div key={p.nome} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid var(--line)', fontSize: 12 }}>
-                <span>↓ {p.nome}</span>
-                <span className="mono" style={{ color: 'var(--text-dim)' }}>{p.quantidade} un</span>
-                <span className="mono" style={{ color: 'var(--amber)' }}>{reais(p.valor)}</span>
-              </div>
-            ))}
-          </div>
+          <LucroPorCategoria rangeDoTopo={range} labelDoTopo={periodoLabel} />
 
           {/* Formas de pagamento */}
           <p className="section-title">Formas de pagamento</p>

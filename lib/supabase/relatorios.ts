@@ -1,4 +1,5 @@
 import { createClient } from './client'
+import { buscarTaxas, taxaDoPagamento } from './configuracoes'
 
 const DIAS_SEMANA = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb']
 
@@ -71,6 +72,7 @@ export function inicioFimPeriodo(periodo: 'hoje' | 'semana' | 'mes'): { inicio: 
 export type Relatorio = {
   totalVendido: number
   lucro: number
+  taxasTotal: number
   numVendas: number
   ticketMedio: number
   porDiaSemana: { dia: string; total: number; ocorrencias: number }[]
@@ -109,7 +111,34 @@ export async function buscarRelatorio(inicio: string, fim: string, limitesPeriod
   const totalVendido = (vendas ?? []).reduce((s, v) => s + v.valor_total, 0)
   const numVendas = (vendas ?? []).length
   const ticketMedio = numVendas > 0 ? totalVendido / numVendas : 0
-  const lucro = itens.reduce((s, i) => s + i.quantidade * (i.preco_venda_unitario - i.preco_custo_unitario), 0)
+  const lucroBruto = itens.reduce((s, i) => s + i.quantidade * (i.preco_venda_unitario - i.preco_custo_unitario), 0)
+
+  // Desconta as taxas de maquininha/banco: a loja vende R$ 100 no crédito mas
+  // recebe menos que isso. Sem esse desconto o lucro fica otimista demais.
+  const taxas = await buscarTaxas()
+  let taxasTotal = 0
+  if (vendaIds.length > 0) {
+    const { data: pagamentos } = await supabase
+      .from('pagamentos')
+      .select('venda_id, forma, valor, tipo_cartao')
+      .in('venda_id', vendaIds)
+      .eq('status', 'confirmado')
+
+    const vendasComPagamento = new Set<string>()
+    for (const p of (pagamentos as any[]) ?? []) {
+      vendasComPagamento.add(p.venda_id)
+      taxasTotal += Number(p.valor) * (taxaDoPagamento(taxas, p.forma, p.tipo_cartao) / 100)
+    }
+
+    // Vendas antigas (feitas antes do módulo de pagamentos) não têm registro em
+    // `pagamentos`; nesses casos a taxa sai da forma de pagamento da própria venda.
+    for (const v of vendas ?? []) {
+      if (vendasComPagamento.has(v.id)) continue
+      taxasTotal += v.valor_total * (taxaDoPagamento(taxas, v.forma_pagamento) / 100)
+    }
+  }
+
+  const lucro = lucroBruto - taxasTotal
 
   const somaPorDia: number[] = [0, 0, 0, 0, 0, 0, 0]
   const diasVistosPorDia: Set<string>[] = [new Set(), new Set(), new Set(), new Set(), new Set(), new Set(), new Set()]
@@ -165,7 +194,7 @@ export async function buscarRelatorio(inicio: string, fim: string, limitesPeriod
     .map(([forma, valor]) => ({ forma, valor, percentual: totalVendido > 0 ? (valor / totalVendido) * 100 : 0 }))
     .sort((a, b) => b.valor - a.valor)
 
-  return { totalVendido, lucro, numVendas, ticketMedio, porDiaSemana, porPeriodoDia, porCategoria, maisVendidos, menosVendidos, formasPagamento }
+  return { totalVendido, lucro, taxasTotal, numVendas, ticketMedio, porDiaSemana, porPeriodoDia, porCategoria, maisVendidos, menosVendidos, formasPagamento }
 }
 
 export type PontoEvolucao = { label: string; total: number }
@@ -344,4 +373,39 @@ export async function buscarCurvaABC(inicio: string, fim: string): Promise<Curva
   }
 
   return { produtos, resumo, conselhos }
+}
+
+// Busca só o lucro por categoria de um período. Usado pela seção "Lucro por
+// categoria", que tem seletor de período próprio e por isso consulta separado
+// do resto do relatório.
+export async function buscarLucroPorCategoria(inicio: string, fim: string): Promise<{ nome: string; lucro: number }[]> {
+  const supabase = createClient()
+
+  const { data: vendas, error: erroVendas } = await supabase
+    .from('vendas')
+    .select('id')
+    .eq('status', 'concluida')
+    .gte('data_hora', inicio)
+    .lt('data_hora', fim)
+  if (erroVendas) throw erroVendas
+
+  const vendaIds = (vendas ?? []).map((v) => v.id)
+  if (vendaIds.length === 0) return []
+
+  const { data: itens, error: erroItens } = await supabase
+    .from('itens_venda')
+    .select('quantidade, preco_venda_unitario, preco_custo_unitario, produtos(categorias(nome))')
+    .in('venda_id', vendaIds)
+  if (erroItens) throw erroItens
+
+  const lucroPorCategoria: Record<string, number> = {}
+  for (const item of (itens as any[]) ?? []) {
+    const nomeCategoria = item.produtos?.categorias?.nome ?? 'Sem categoria'
+    const lucroItem = item.quantidade * (item.preco_venda_unitario - item.preco_custo_unitario)
+    lucroPorCategoria[nomeCategoria] = (lucroPorCategoria[nomeCategoria] ?? 0) + lucroItem
+  }
+
+  return Object.entries(lucroPorCategoria)
+    .map(([nome, lucro]) => ({ nome, lucro }))
+    .sort((a, b) => b.lucro - a.lucro)
 }
