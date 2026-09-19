@@ -56,9 +56,21 @@ export async function buscarResumoHoje(): Promise<ResumoHoje> {
 
   const totalVendido = (vendas ?? []).reduce((soma, v) => soma + v.valor_total, 0)
 
+  // Calcula por forma de pagamento a partir da tabela `pagamentos` (não de
+  // vendas.forma_pagamento), porque uma venda pode ter mais de um pagamento
+  // (pagamento misto) — assim cada forma conta só a sua parte de verdade.
   const porForma: Record<string, number> = {}
-  for (const v of vendas ?? []) {
-    porForma[v.forma_pagamento] = (porForma[v.forma_pagamento] ?? 0) + v.valor_total
+  if (vendaIds.length > 0) {
+    const { data: pagamentos, error: erroPagamentos } = await supabase
+      .from('pagamentos')
+      .select('forma, valor, venda_id')
+      .in('venda_id', vendaIds)
+      .eq('status', 'confirmado')
+    if (erroPagamentos) throw erroPagamentos
+
+    for (const p of pagamentos ?? []) {
+      porForma[p.forma] = (porForma[p.forma] ?? 0) + Number(p.valor)
+    }
   }
   const formasPagamento = Object.entries(porForma)
     .map(([forma, valor]) => ({ forma, valor, percentual: totalVendido > 0 ? (valor / totalVendido) * 100 : 0 }))

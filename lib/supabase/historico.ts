@@ -6,6 +6,8 @@ export type VendaResumo = {
   valor_total: number
   forma_pagamento: string
   status: string
+  cancelado_apos_pagamento: boolean
+  motivo_cancelamento: string | null
   itensResumo: string
 }
 
@@ -15,8 +17,15 @@ export type ItemVendaDetalhe = {
   produtos: { nome: string } | null
 }
 
+export type PagamentoResumo = {
+  forma: string
+  valor: number
+  status: string
+}
+
 export type VendaDetalhe = VendaResumo & {
   itens: ItemVendaDetalhe[]
+  pagamentos: PagamentoResumo[]
 }
 
 function montarResumoItens(itens: { quantidade: number; nome: string }[]): string {
@@ -30,7 +39,7 @@ export async function listarVendas(inicio?: string, fim?: string): Promise<Venda
   const supabase = createClient()
   let query = supabase
     .from('vendas')
-    .select('id, data_hora, valor_total, forma_pagamento, status')
+    .select('id, data_hora, valor_total, forma_pagamento, status, cancelado_apos_pagamento, motivo_cancelamento')
     .order('data_hora', { ascending: false })
 
   if (inicio) query = query.gte('data_hora', inicio)
@@ -65,7 +74,7 @@ export async function buscarVenda(id: string): Promise<VendaDetalhe> {
 
   const { data: venda, error: erroVenda } = await supabase
     .from('vendas')
-    .select('id, data_hora, valor_total, forma_pagamento, status')
+    .select('id, data_hora, valor_total, forma_pagamento, status, cancelado_apos_pagamento, motivo_cancelamento')
     .eq('id', id)
     .single()
   if (erroVenda) throw erroVenda
@@ -76,18 +85,34 @@ export async function buscarVenda(id: string): Promise<VendaDetalhe> {
     .eq('venda_id', id)
   if (erroItens) throw erroItens
 
-  return { ...venda, itensResumo: '', itens: (itens as any) ?? [] }
+  const { data: pagamentos, error: erroPagamentos } = await supabase
+    .from('pagamentos')
+    .select('forma, valor, status')
+    .eq('venda_id', id)
+    .order('created_at')
+  if (erroPagamentos) throw erroPagamentos
+
+  return { ...venda, itensResumo: '', itens: (itens as any) ?? [], pagamentos: (pagamentos as any) ?? [] }
 }
 
-export async function cancelarVenda(id: string): Promise<void> {
+export async function cancelarVenda(id: string, motivo: string, retornaEstoque: boolean = true): Promise<void> {
   const supabase = createClient()
-  const { error } = await supabase.rpc('cancelar_venda', { p_venda_id: id })
+  const { error } = await supabase.rpc('cancelar_venda', {
+    p_venda_id: id,
+    p_motivo: motivo,
+    p_retorna_estoque: retornaEstoque,
+  })
   if (error) throw error
 }
 
 export const FORMA_PAGAMENTO_LABEL: Record<string, string> = {
+  dinheiro: 'Dinheiro',
+  pix_manual: 'Pix',
+  cartao_maquininha: 'Cartão (maquininha)',
+  pix_automatico: 'Pix automático',
+  pendente: 'Aguardando pagamento',
+  // valores antigos, de vendas registradas antes desta etapa
   pix: 'Pix',
   debito: 'Débito',
   credito: 'Crédito',
-  dinheiro: 'Dinheiro',
 }

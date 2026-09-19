@@ -8,6 +8,7 @@ export type Produto = {
   preco_venda: number
   estoque_atual: number
   estoque_minimo: number
+  codigo_barras: string | null
   categorias?: { nome: string } | null
 }
 
@@ -15,11 +16,23 @@ export async function listarProdutos(): Promise<Produto[]> {
   const supabase = createClient()
   const { data, error } = await supabase
     .from('produtos')
-    .select('id, nome, categoria_id, preco_custo, preco_venda, estoque_atual, estoque_minimo, categorias(nome)')
+    .select('id, nome, categoria_id, preco_custo, preco_venda, estoque_atual, estoque_minimo, codigo_barras, categorias(nome)')
     .order('nome', { ascending: true })
 
   if (error) throw error
   return (data as any) ?? []
+}
+
+export async function buscarProdutoPorCodigoBarras(codigo: string): Promise<Produto | null> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('produtos')
+    .select('id, nome, categoria_id, preco_custo, preco_venda, estoque_atual, estoque_minimo, codigo_barras, categorias(nome)')
+    .eq('codigo_barras', codigo)
+    .maybeSingle()
+
+  if (error) throw error
+  return (data as any) ?? null
 }
 
 export async function criarProduto(input: {
@@ -29,6 +42,7 @@ export async function criarProduto(input: {
   preco_venda: number
   estoque_atual: number
   estoque_minimo: number
+  codigo_barras?: string | null
 }): Promise<Produto> {
   const supabase = createClient()
 
@@ -42,11 +56,17 @@ export async function criarProduto(input: {
       preco_venda: input.preco_venda,
       estoque_atual: input.estoque_atual,
       estoque_minimo: input.estoque_minimo,
+      codigo_barras: input.codigo_barras || null,
     })
-    .select('id, nome, categoria_id, preco_custo, preco_venda, estoque_atual, estoque_minimo')
+    .select('id, nome, categoria_id, preco_custo, preco_venda, estoque_atual, estoque_minimo, codigo_barras')
     .single()
 
-  if (erroProduto) throw erroProduto
+  if (erroProduto) {
+    if ((erroProduto as any).code === '23505') {
+      throw new Error('Já existe um produto cadastrado com esse código de barras.')
+    }
+    throw erroProduto
+  }
 
   // 2. Se já cadastrou com quantidade, registra a entrada no histórico de movimentações
   if (input.estoque_atual > 0) {

@@ -4,13 +4,8 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { buscarResumoHoje, ResumoHoje } from '@/lib/supabase/dashboard'
-
-const FORMA_PAGAMENTO_LABEL: Record<string, string> = {
-  pix: 'Pix',
-  debito: 'Débito',
-  credito: 'Crédito',
-  dinheiro: 'Dinheiro',
-}
+import { buscarCaixaAberto } from '@/lib/supabase/caixa'
+import { FORMA_PAGAMENTO_LABEL } from '@/lib/supabase/historico'
 
 function reais(v: number) {
   return `R$ ${v.toFixed(2).replace('.', ',')}`
@@ -22,6 +17,7 @@ export default function HomePage() {
   const [email, setEmail] = useState<string | null>(null)
   const [resumo, setResumo] = useState<ResumoHoje | null>(null)
   const [carregandoResumo, setCarregandoResumo] = useState(false)
+  const [caixaAberto, setCaixaAberto] = useState<boolean | null>(null)
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -31,6 +27,7 @@ export default function HomePage() {
       if (userEmail) {
         setCarregandoResumo(true)
         buscarResumoHoje().then(setResumo).finally(() => setCarregandoResumo(false))
+        buscarCaixaAberto().then((c) => setCaixaAberto(!!c)).catch(() => setCaixaAberto(null))
       }
     })
   }, [])
@@ -117,8 +114,15 @@ export default function HomePage() {
         </>
       )}
 
+      {caixaAberto === false && (
+        <Link href="/caixa" className="card" style={{ display: 'block', marginBottom: 16, textDecoration: 'none', borderColor: 'rgba(255,180,84,0.4)' }}>
+          <span style={{ color: 'var(--amber)', fontSize: 13 }}>⚠ Nenhum caixa aberto hoje — toque aqui pra abrir</span>
+        </Link>
+      )}
+
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
         <Link href="/venda" className="btn-primary">Nova venda</Link>
+        <Link href="/caixa" className="btn-secondary">Caixa {caixaAberto ? '· aberto' : ''}</Link>
         <Link href="/historico" className="btn-secondary">Histórico</Link>
         <Link href="/produtos" className="btn-secondary">Produtos</Link>
         <Link href="/relatorios" className="btn-secondary">Relatórios</Link>

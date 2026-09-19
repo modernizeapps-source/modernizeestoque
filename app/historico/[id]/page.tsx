@@ -17,6 +17,9 @@ export default function DetalheVendaPage() {
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState<string | null>(null)
   const [cancelando, setCancelando] = useState(false)
+  const [mostrarMotivo, setMostrarMotivo] = useState(false)
+  const [motivo, setMotivo] = useState('')
+  const [retornaEstoque, setRetornaEstoque] = useState(true)
 
   function carregar() {
     setCarregando(true)
@@ -26,16 +29,19 @@ export default function DetalheVendaPage() {
   useEffect(() => { carregar() }, [id])
 
   async function handleCancelar() {
-    const confirmar = window.confirm('Tem certeza que quer cancelar essa venda? Os produtos voltam pro estoque.')
-    if (!confirmar) return
-
+    if (!motivo.trim()) {
+      setErro('Diga o motivo do cancelamento.')
+      return
+    }
     setCancelando(true)
     setErro(null)
     try {
-      await cancelarVenda(id)
+      await cancelarVenda(id, motivo.trim(), retornaEstoque)
+      setMostrarMotivo(false)
+      setMotivo('')
       carregar()
-    } catch (e) {
-      setErro('Não foi possível cancelar essa venda. Tente novamente.')
+    } catch (e: any) {
+      setErro(e?.message ?? 'Não foi possível cancelar essa venda. Tente novamente.')
     } finally {
       setCancelando(false)
     }
@@ -47,6 +53,8 @@ export default function DetalheVendaPage() {
 
   const data = new Date(venda.data_hora)
   const cancelada = venda.status === 'cancelada'
+  const foiEstorno = cancelada && venda.cancelado_apos_pagamento
+  const aguardandoPagamento = venda.status === 'aguardando_pagamento'
 
   return (
     <div className="container" style={{ maxWidth: 420 }}>
@@ -58,7 +66,14 @@ export default function DetalheVendaPage() {
 
       {cancelada && (
         <div style={{ background: 'rgba(255,107,107,0.1)', border: '1px solid rgba(255,107,107,0.3)', color: '#ff9d9d', padding: 10, borderRadius: 10, marginTop: 12, fontSize: 13 }}>
-          Essa venda foi cancelada. O estoque já foi devolvido.
+          {foiEstorno ? 'Essa venda foi estornada.' : 'Essa venda foi cancelada antes de ser paga.'}
+          {venda.motivo_cancelamento && ` Motivo: ${venda.motivo_cancelamento}`}
+        </div>
+      )}
+
+      {aguardandoPagamento && (
+        <div style={{ background: 'rgba(255,180,84,0.1)', border: '1px solid rgba(255,180,84,0.3)', color: 'var(--amber)', padding: 10, borderRadius: 10, marginTop: 12, fontSize: 13 }}>
+          Essa venda ainda está aguardando pagamento.
         </div>
       )}
 
@@ -76,21 +91,59 @@ export default function DetalheVendaPage() {
         <span className="mono" style={{ color: 'var(--cyan)' }}>{reais(venda.valor_total)}</span>
       </div>
 
-      <div className="card" style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 20 }}>
-        <span style={{ color: 'var(--text-dim)' }}>Forma de pagamento</span>
-        <span>{FORMA_PAGAMENTO_LABEL[venda.forma_pagamento] ?? venda.forma_pagamento}</span>
-      </div>
+      {venda.pagamentos.length > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <p className="section-title">Pagamentos</p>
+          {venda.pagamentos.map((p, i) => (
+            <div key={i} className="card" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, padding: 10 }}>
+              <div>
+                <div style={{ fontSize: 13 }}>{FORMA_PAGAMENTO_LABEL[p.forma] ?? p.forma}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>
+                  {p.status === 'confirmado' && 'Confirmado'}
+                  {p.status === 'pendente' && 'Aguardando'}
+                  {p.status === 'falhou' && 'Não concluído'}
+                  {p.status === 'estorno_pendente' && 'Estorno pendente (fazer manualmente no app da InfinitePay)'}
+                  {p.status === 'estornado' && 'Estornado'}
+                </div>
+              </div>
+              <div className="mono" style={{ fontSize: 13 }}>{reais(Number(p.valor))}</div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {erro && <p className="error-text" style={{ marginBottom: 10 }}>{erro}</p>}
 
-      {!cancelada && (
-        <button onClick={handleCancelar} disabled={cancelando} className="btn-danger" style={{ width: '100%' }}>
-          {cancelando ? 'Cancelando...' : 'Cancelar venda'}
+      {!cancelada && !mostrarMotivo && (
+        <button onClick={() => setMostrarMotivo(true)} className="btn-danger" style={{ width: '100%' }}>
+          {aguardandoPagamento ? 'Cancelar venda' : 'Estornar venda'}
         </button>
       )}
-      {!cancelada && (
+
+      {!cancelada && mostrarMotivo && (
+        <div className="card">
+          <label className="label">Motivo</label>
+          <input value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Por que está cancelando/estornando?" className="input" style={{ marginBottom: 12 }} />
+
+          {!aguardandoPagamento && (
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, marginBottom: 14 }}>
+              <input type="checkbox" checked={retornaEstoque} onChange={(e) => setRetornaEstoque(e.target.checked)} />
+              Devolver os produtos ao estoque
+            </label>
+          )}
+
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button onClick={() => setMostrarMotivo(false)} className="btn-secondary" style={{ flex: 1, padding: 12 }}>Voltar</button>
+            <button onClick={handleCancelar} disabled={cancelando} className="btn-danger" style={{ flex: 2, padding: 12 }}>
+              {cancelando ? 'Confirmando...' : 'Confirmar'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!cancelada && !mostrarMotivo && !aguardandoPagamento && (
         <p style={{ fontSize: 11, color: 'var(--text-dim)', textAlign: 'center', marginTop: 8 }}>
-          Os produtos voltam pro estoque automaticamente. A venda continua aqui, marcada como cancelada.
+          Você escolhe se os produtos voltam pro estoque. Pagamentos em dinheiro são estornados na hora pelo caixa; Pix/cartão automático ficam marcados como pendente pra você estornar no app da InfinitePay.
         </p>
       )}
     </div>

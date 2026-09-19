@@ -86,6 +86,7 @@ export default function HistoricoPage() {
           const hora = data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
           const dia = data.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
           const cancelada = v.status === 'cancelada'
+          const aguardando = v.status === 'aguardando_pagamento'
 
           return (
             <Link
@@ -101,7 +102,12 @@ export default function HistoricoPage() {
                   {FORMA_PAGAMENTO_LABEL[v.forma_pagamento] ?? v.forma_pagamento}
                   {cancelada && (
                     <span className="mono" style={{ color: 'var(--red)', marginLeft: 8, fontSize: 9, border: '1px solid var(--red)', borderRadius: 4, padding: '1px 5px' }}>
-                      CANCELADA
+                      {v.cancelado_apos_pagamento ? 'ESTORNADA' : 'CANCELADA'}
+                    </span>
+                  )}
+                  {aguardando && (
+                    <span className="mono" style={{ color: 'var(--amber)', marginLeft: 8, fontSize: 9, border: '1px solid var(--amber)', borderRadius: 4, padding: '1px 5px' }}>
+                      AGUARDANDO
                     </span>
                   )}
                 </div>
