@@ -80,3 +80,78 @@ export async function criarProduto(input: {
 
   return produto
 }
+
+export async function buscarProduto(id: string): Promise<Produto | null> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('produtos')
+    .select('id, nome, categoria_id, preco_custo, preco_venda, estoque_atual, estoque_minimo, codigo_barras, categorias(nome)')
+    .eq('id', id)
+    .maybeSingle()
+  if (error) throw error
+  return (data as any) ?? null
+}
+
+export async function atualizarProduto(id: string, input: {
+  nome: string
+  categoria_id: string
+  preco_venda: number
+  preco_custo: number
+  estoque_minimo: number
+  codigo_barras?: string | null
+}): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase
+    .from('produtos')
+    .update({
+      nome: input.nome,
+      categoria_id: input.categoria_id,
+      preco_venda: input.preco_venda,
+      preco_custo: input.preco_custo,
+      estoque_minimo: input.estoque_minimo,
+      codigo_barras: input.codigo_barras || null,
+    })
+    .eq('id', id)
+
+  if (error) {
+    if ((error as any).code === '23505') {
+      throw new Error('Já existe outro produto com esse código de barras.')
+    }
+    throw error
+  }
+}
+
+// Entrada de mercadoria: soma ao estoque e recalcula o custo médio ponderado.
+// Ex: 20 unidades a R$3,00 + 50 a R$2,50 => 70 unidades a R$2,64.
+export async function registrarEntradaMercadoria(
+  produtoId: string,
+  quantidade: number,
+  custoUnitario: number
+): Promise<{ estoque_novo: number; custo_medio_novo: number }> {
+  const supabase = createClient()
+  const { data, error } = await supabase.rpc('registrar_entrada_mercadoria', {
+    p_produto_id: produtoId,
+    p_quantidade: quantidade,
+    p_custo_unitario: custoUnitario,
+  })
+  if (error) throw error
+  const row = (data as any[])[0]
+  return { estoque_novo: row.estoque_novo, custo_medio_novo: Number(row.custo_medio_novo) }
+}
+
+// Correção manual do estoque (quando a contagem da prateleira não bate)
+export async function ajustarEstoque(produtoId: string, estoqueNovo: number, motivo: string): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase.rpc('ajustar_estoque', {
+    p_produto_id: produtoId,
+    p_estoque_novo: estoqueNovo,
+    p_motivo: motivo,
+  })
+  if (error) throw error
+}
+
+// Calcula quanto sobra de cada venda, em % sobre o preço de venda
+export function margemLucro(precoVenda: number, precoCusto: number): number {
+  if (!precoVenda || precoVenda <= 0) return 0
+  return ((precoVenda - precoCusto) / precoVenda) * 100
+}

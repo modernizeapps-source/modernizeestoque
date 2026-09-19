@@ -63,7 +63,6 @@ export default function VendaPage() {
   const [valorParcial, setValorParcial] = useState('')
 
   // pagamento na maquininha
-  const [bandeira, setBandeira] = useState('')
   const [tipoCartao, setTipoCartao] = useState<'credito' | 'debito'>('credito')
 
   // pix automático
@@ -197,7 +196,6 @@ export default function VendaPage() {
     } else if (forma === 'pix_manual') {
       setEtapa('pagamento_pix_manual')
     } else if (forma === 'cartao_maquininha') {
-      setBandeira('')
       setTipoCartao('credito')
       setEtapa('pagamento_maquininha')
     } else if (forma === 'pix_automatico') {
@@ -271,10 +269,6 @@ export default function VendaPage() {
 
   async function handleConfirmarMaquininha() {
     if (!vendaId) return
-    if (!bandeira.trim()) {
-      setErroCheckout('Escolha a bandeira do cartão.')
-      return
-    }
     setProcessando(true)
     setErroCheckout(null)
     try {
@@ -282,7 +276,6 @@ export default function VendaPage() {
         venda_id: vendaId,
         forma: 'cartao_maquininha',
         valor: valorACobrar,
-        bandeira: bandeira.trim(),
         tipo_cartao: tipoCartao,
       })
       await aposPagamentoConfirmado(valorACobrar)
@@ -542,9 +535,6 @@ export default function VendaPage() {
                 <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 4 }}>Valor a cobrar</p>
                 <p className="mono" style={{ fontSize: 22, color: 'var(--cyan)', marginBottom: 16 }}>{reais(valorACobrar)}</p>
                 <p style={{ fontSize: 13, marginBottom: 16 }}>Faça a cobrança na maquininha. Depois, registre aqui como foi pago.</p>
-
-                <label className="label">Bandeira</label>
-                <input value={bandeira} onChange={(e) => setBandeira(e.target.value)} placeholder="Ex: Visa, Mastercard, Elo" className="input" style={{ marginBottom: 12 }} />
 
                 <label className="label">Tipo</label>
                 <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>

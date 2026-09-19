@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Produto, listarProdutos } from '@/lib/supabase/produtos'
+import { Produto, listarProdutos, margemLucro } from '@/lib/supabase/produtos'
 import { Categoria, listarCategorias } from '@/lib/supabase/categorias'
 
 function reais(v: number) {
@@ -69,18 +69,32 @@ export default function ProdutosPage() {
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {produtosFiltrados.map((p) => (
-          <div key={p.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <div style={{ fontWeight: 500, fontSize: 14 }}>{p.nome}</div>
-              <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 2 }}>
-                {p.categorias?.nome ?? 'Sem categoria'} · Estoque: {p.estoque_atual}
-                {p.estoque_atual <= p.estoque_minimo && <span style={{ color: 'var(--amber)', marginLeft: 6 }}>· baixo</span>}
+        {produtosFiltrados.map((p) => {
+          const margem = margemLucro(p.preco_venda, p.preco_custo)
+          return (
+            <Link
+              key={p.id}
+              href={`/produtos/${p.id}`}
+              className="card"
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', textDecoration: 'none', color: 'var(--text)' }}
+            >
+              <div>
+                <div style={{ fontWeight: 500, fontSize: 14 }}>{p.nome}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 2 }}>
+                  {p.categorias?.nome ?? 'Sem categoria'} · Estoque: {p.estoque_atual}
+                  {p.estoque_atual <= p.estoque_minimo && <span style={{ color: 'var(--amber)', marginLeft: 6 }}>· baixo</span>}
+                </div>
+                <div className="mono" style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 3 }}>
+                  custo {reais(p.preco_custo)} · margem <span style={{ color: margem > 0 ? 'var(--green)' : 'var(--red)' }}>{margem.toFixed(0)}%</span>
+                </div>
               </div>
-            </div>
-            <div className="mono" style={{ fontSize: 14, fontWeight: 500, color: 'var(--cyan)' }}>{reais(p.preco_venda)}</div>
-          </div>
-        ))}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div className="mono" style={{ fontSize: 14, fontWeight: 500, color: 'var(--cyan)' }}>{reais(p.preco_venda)}</div>
+                <span style={{ color: 'var(--text-dim)', fontSize: 16 }}>›</span>
+              </div>
+            </Link>
+          )
+        })}
       </div>
     </div>
   )

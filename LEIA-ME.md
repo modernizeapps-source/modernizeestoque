@@ -1,69 +1,80 @@
-# Estoque Mercadinho — Pacote 2 (correções + taxas)
+# Estoque Mercadinho — Pacote 3
 
-## Nada pra configurar desta vez
+## Nada pra configurar
 
-O banco de dados já foi atualizado por mim. As variáveis do Netlify continuam
-as mesmas do pacote anterior — não precisa mexer em nada lá.
-
-É só subir os arquivos no GitHub e rodar o deploy:
+O banco já foi atualizado por mim. As variáveis do Netlify continuam as mesmas.
+É só subir os arquivos no GitHub e rodar:
 **Netlify → Deploys → Trigger deploy → Deploy project without cache**
 
-## O que mudou neste pacote
+---
 
-### 1. Nova tela: Configurações (taxas)
-Botão novo na tela inicial. Serve pra cadastrar a taxa que a maquininha/banco
-cobra em cada forma de pagamento (crédito, débito, Pix...). O lucro em todos os
-relatórios passa a descontar essas taxas automaticamente, mostrando quanto
-realmente sobra.
+## 1. Editar produtos (o principal desta entrega)
 
-Começa tudo zerado — **preencha com as taxas reais do contrato do Misa** pra
-que o lucro fique correto. No card de Lucro dos relatórios aparece, em letra
-pequena, quanto foi descontado de taxa no período.
+Agora dá pra clicar em qualquer produto na lista e abrir a tela dele. Lá você vê
+estoque atual, quanto compra, quanto vende e a **margem de lucro**, e pode:
 
-### 2. Pagamento misto agora funciona
-Antes, toda forma de pagamento cobrava o valor cheio da venda — na prática o
-pagamento dividido não funcionava. Agora, na tela de finalizar venda, existe um
-campo **"Quanto pagar agora"**: deixe vazio pra cobrar tudo numa forma só, ou
-preencha um valor menor pra dividir. Depois de confirmar a primeira parte, o
-sistema mostra quanto falta e você escolhe a segunda forma.
+### "Chegou mercadoria" — o uso do dia a dia
+Você digita quantas unidades chegaram e quanto pagou por unidade. O sistema
+soma ao estoque e **recalcula o custo médio sozinho**.
 
-### 3. Seletor de período no Lucro por categoria
-A seção agora tem um seletor próprio, pequeno, ao lado do título. Por padrão ele
-acompanha o filtro do topo do relatório (fica em cinza). Se você escolher um
-período ali (Esta semana / Este mês / 3 meses / 6 meses / 1 ano / datas
-específicas), a seção passa a andar sozinha e o seletor fica azul. Tem a opção
-"↺ Seguir o filtro do topo" pra voltar ao normal.
+Exemplo real: você tem 20 Coronas que custaram R$ 3,00 e chegam 50 a R$ 2,50.
+O sistema mostra na hora, antes de confirmar:
 
-### 4. Seção "Produtos" removida dos relatórios
-Ela mostrava mais/menos vendidos, o que a Curva ABC já faz melhor.
+    Estoque: 20 → 70
+    Custo médio: R$ 3,00 → R$ 2,64
 
-### 5. Texto da sangria corrigido
-Antes aparecia "Estorno da venda ae102ad3-e876-..." (código interno ilegível).
-Agora aparece "Estorno de venda — <motivo que você digitou>".
+Por que R$ 2,64? Porque você gastou R$ 60 nas primeiras 20 e R$ 125 nas outras
+50 — total R$ 185 para 70 unidades. Esse é o custo real de cada garrafa que
+você tem hoje. Assim o lucro nos relatórios fica correto.
 
-### 6. Correção extra que encontrei
-Quando você abria o carrinho e fechava sem pagar, a venda ficava "pendurada"
-no sistema como aguardando pagamento, pra sempre. Agora ela é descartada
-automaticamente. (Já limpei a que tinha ficado dos seus testes.)
+### Editar dados
+Nome, categoria, código de barras, preço de venda e estoque mínimo.
+
+### Correção manual (link discreto no fim da página)
+Para quando a contagem da prateleira não bate com o sistema (pede o motivo, que
+fica registrado), ou pra consertar um erro de digitação no custo. Para mercadoria
+nova use sempre "Chegou mercadoria", que calcula o custo médio sozinho.
+
+### Na listagem
+Agora cada produto mostra também o custo e a margem de lucro, além do preço de venda.
+
+---
+
+## 2. Campo de bandeira removido
+Na venda com cartão, sumiu o campo "Bandeira" — ficou só Crédito/Débito, que é o
+que realmente afeta a taxa e o lucro.
+
+---
+
+## 3. O que já veio no pacote anterior
+(caso você ainda não tenha testado tudo)
+
+- Tela de **Configurações** com as taxas por forma de pagamento
+- **Pagamento misto** funcionando (campo "Quanto pagar agora")
+- **Seletor de período** próprio no Lucro por categoria
+- Seção "Produtos" removida dos relatórios (a Curva ABC já cobre)
+- Texto da sangria corrigido
+
+---
 
 ## Roteiro de teste
 
-1. **Configurações** → preenche as taxas (ex: crédito 3,5 / débito 1,5) e salva
-2. **Relatórios** → confere se o card de Lucro agora mostra "já sem R$ X de taxas"
-3. **Relatórios** → testa o seletor pequeno do Lucro por categoria
-4. **Relatórios** → confere que a seção "Produtos" sumiu
-5. **Venda** → monta um carrinho, em "Quanto pagar agora" coloca menos que o
-   total, paga em dinheiro, e depois completa o restante no Pix
-6. **Venda** → abre o carrinho e fecha sem pagar; confere no Histórico que ela
-   não ficou como "aguardando"
-7. **Leitor de código de barras** (quando pegar com o Misa): conecta no USB,
-   abre Nova venda e escaneia — deve avisar "código não cadastrado" com atalho
-   pra cadastrar
+1. **Produtos** → clica num produto → confere se abre a tela nova com margem
+2. **"Chegou mercadoria"** → digita 50 unidades a R$ 2,50 e confere se a prévia
+   do custo médio aparece antes de confirmar
+3. Confirma e vê se o estoque e o custo atualizaram
+4. **Editar dados** → muda o preço de venda e salva
+5. **Correção manual** → muda o estoque pra um número diferente, coloca um
+   motivo e aplica
+6. **Venda com cartão** → confere se o campo de bandeira sumiu
+7. **Leitor de código de barras** (quando pegar): conecta no USB, abre Nova
+   venda e escaneia
+
+---
 
 ## Ainda pendente
 
-- **Pix automático**: depende do Misa ativar o "Checkout Integrado" no app da
+- **Pix automático**: esperando o Misa ativar o "Checkout Integrado" no app da
   InfinitePay (aba Vendas → Checkout → Configurações)
-- **Conciliação financeira**: comparar as vendas com o que a InfinitePay
-  realmente repassou. Depende de saber o que a API deles oferece
+- **Conciliação financeira**: depende de saber o que a API da InfinitePay oferece
 - **Nota fiscal (NFC-e)** e **multiempresa**: etapas futuras
