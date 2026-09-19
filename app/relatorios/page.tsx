@@ -13,12 +13,13 @@ import LucroPorCategoria from './LucroPorCategoria'
 const FORMA_PAGAMENTO_LABEL: Record<string, string> = {
   dinheiro: 'Dinheiro',
   pix_manual: 'Pix',
-  pix_automatico: 'Pix automático',
-  cartao_maquininha: 'Cartão (maquininha)',
+  cartao: 'Cartão',
   // formas antigas, de vendas registradas antes desta etapa
+  cartao_maquininha: 'Cartão',
+  pix_automatico: 'Pix',
   pix: 'Pix',
-  debito: 'Débito',
-  credito: 'Crédito',
+  debito: 'Cartão (débito)',
+  credito: 'Cartão (crédito)',
 }
 
 function reais(v: number) {

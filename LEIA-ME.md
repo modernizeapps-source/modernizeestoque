@@ -1,80 +1,72 @@
-# Estoque Mercadinho — Pacote 3
+# Estoque Mercadinho — Pacote 4
 
 ## Nada pra configurar
-
-O banco já foi atualizado por mim. As variáveis do Netlify continuam as mesmas.
-É só subir os arquivos no GitHub e rodar:
+O banco já foi atualizado. Só subir no GitHub e rodar:
 **Netlify → Deploys → Trigger deploy → Deploy project without cache**
 
 ---
 
-## 1. Editar produtos (o principal desta entrega)
+## 1. Pix automático removido
 
-Agora dá pra clicar em qualquer produto na lista e abrir a tela dele. Lá você vê
-estoque atual, quanto compra, quanto vende e a **margem de lucro**, e pode:
+O QR Code da InfinitePay abria um checkout de loja online no navegador, pedindo
+nome, e-mail e telefone do cliente — inviável pro balcão. Foi removido.
 
-### "Chegou mercadoria" — o uso do dia a dia
-Você digita quantas unidades chegaram e quanto pagou por unidade. O sistema
-soma ao estoque e **recalcula o custo médio sozinho**.
-
-Exemplo real: você tem 20 Coronas que custaram R$ 3,00 e chegam 50 a R$ 2,50.
-O sistema mostra na hora, antes de confirmar:
-
-    Estoque: 20 → 70
-    Custo médio: R$ 3,00 → R$ 2,64
-
-Por que R$ 2,64? Porque você gastou R$ 60 nas primeiras 20 e R$ 125 nas outras
-50 — total R$ 185 para 70 unidades. Esse é o custo real de cada garrafa que
-você tem hoje. Assim o lucro nos relatórios fica correto.
-
-### Editar dados
-Nome, categoria, código de barras, preço de venda e estoque mínimo.
-
-### Correção manual (link discreto no fim da página)
-Para quando a contagem da prateleira não bate com o sistema (pede o motivo, que
-fica registrado), ou pra consertar um erro de digitação no custo. Para mercadoria
-nova use sempre "Chegou mercadoria", que calcula o custo médio sozinho.
-
-### Na listagem
-Agora cada produto mostra também o custo e a margem de lucro, além do preço de venda.
+Ficaram três formas: **Dinheiro**, **Pix** (você mostra sua chave e confirma
+quando cair) e **Cartão**.
 
 ---
 
-## 2. Campo de bandeira removido
-Na venda com cartão, sumiu o campo "Bandeira" — ficou só Crédito/Débito, que é o
-que realmente afeta a taxa e o lucro.
+## 2. Maquininhas com taxa própria
+
+Em **Configurações** agora você cadastra as maquininhas que usa, cada uma com a
+taxa dela:
+
+    InfinitePay    crédito 3,50%  ·  débito 1,50%
+    Cielo          crédito 4,00%  ·  débito 2,00%
+
+Na hora da venda com cartão, aparecem botões pra escolher qual maquininha foi
+usada e se foi crédito ou débito. Dois toques, sem digitar nada. O lucro desconta
+a taxa daquela maquininha específica.
+
+**Dica:** se a sua maquininha cobra diferente por bandeira, cadastre como opções
+separadas ("Cielo Visa", "Cielo Master").
+
+Ao remover uma maquininha, as vendas antigas continuam intactas no histórico —
+ela só some da tela de venda.
 
 ---
 
-## 3. O que já veio no pacote anterior
-(caso você ainda não tenha testado tudo)
+## 3. "Cartão (maquininha)" virou só "Cartão"
+Nos relatórios e no histórico. Vendas antigas com "débito"/"crédito" aparecem
+como "Cartão (débito)" e "Cartão (crédito)".
 
-- Tela de **Configurações** com as taxas por forma de pagamento
-- **Pagamento misto** funcionando (campo "Quanto pagar agora")
-- **Seletor de período** próprio no Lucro por categoria
-- Seção "Produtos" removida dos relatórios (a Curva ABC já cobre)
-- Texto da sangria corrigido
+---
+
+## Primeira coisa a fazer depois do deploy
+
+1. Vá em **Configurações**
+2. Cadastre as maquininhas do Misa com as taxas reais do contrato dele
+3. Se o banco cobrar algo por Pix recebido, preencha embaixo (senão deixe 0)
+
+Sem maquininha cadastrada a venda funciona normal, mas o lucro não desconta taxa
+de cartão — a tela avisa quando isso acontece.
 
 ---
 
 ## Roteiro de teste
 
-1. **Produtos** → clica num produto → confere se abre a tela nova com margem
-2. **"Chegou mercadoria"** → digita 50 unidades a R$ 2,50 e confere se a prévia
-   do custo médio aparece antes de confirmar
-3. Confirma e vê se o estoque e o custo atualizaram
-4. **Editar dados** → muda o preço de venda e salva
-5. **Correção manual** → muda o estoque pra um número diferente, coloca um
-   motivo e aplica
-6. **Venda com cartão** → confere se o campo de bandeira sumiu
-7. **Leitor de código de barras** (quando pegar): conecta no USB, abre Nova
-   venda e escaneia
+1. **Configurações** → cadastra duas maquininhas com taxas diferentes
+2. **Venda** → finaliza no cartão e confere se aparecem os botões das duas
+3. Escolhe uma, marca Crédito, confirma
+4. **Relatórios** → confere se o lucro descontou a taxa daquela maquininha
+5. Repete com a outra maquininha e compara a diferença
+6. **Configurações** → edita a taxa de uma e vê o lucro mudar nos relatórios
+7. **Venda** → confere que "Pix automático" não aparece mais
 
 ---
 
 ## Ainda pendente
 
-- **Pix automático**: esperando o Misa ativar o "Checkout Integrado" no app da
-  InfinitePay (aba Vendas → Checkout → Configurações)
-- **Conciliação financeira**: depende de saber o que a API da InfinitePay oferece
-- **Nota fiscal (NFC-e)** e **multiempresa**: etapas futuras
+- **Leitor de código de barras**: você ainda não testou
+- **Conciliação financeira**: comparar vendas com o que a maquininha repassou
+- **Nota fiscal** e **multiempresa**: só se/quando precisar

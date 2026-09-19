@@ -1,5 +1,5 @@
 import { createClient } from './client'
-import { buscarTaxas, taxaDoPagamento } from './configuracoes'
+import { buscarTaxas, listarMaquininhas, taxaDoPagamento } from './configuracoes'
 
 const DIAS_SEMANA = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb']
 
@@ -115,26 +115,26 @@ export async function buscarRelatorio(inicio: string, fim: string, limitesPeriod
 
   // Desconta as taxas de maquininha/banco: a loja vende R$ 100 no crédito mas
   // recebe menos que isso. Sem esse desconto o lucro fica otimista demais.
-  const taxas = await buscarTaxas()
+  const [taxas, maquininhas] = await Promise.all([buscarTaxas(), listarMaquininhas()])
   let taxasTotal = 0
   if (vendaIds.length > 0) {
     const { data: pagamentos } = await supabase
       .from('pagamentos')
-      .select('venda_id, forma, valor, tipo_cartao')
+      .select('venda_id, forma, valor, tipo_cartao, maquininha_id')
       .in('venda_id', vendaIds)
       .eq('status', 'confirmado')
 
     const vendasComPagamento = new Set<string>()
     for (const p of (pagamentos as any[]) ?? []) {
       vendasComPagamento.add(p.venda_id)
-      taxasTotal += Number(p.valor) * (taxaDoPagamento(taxas, p.forma, p.tipo_cartao) / 100)
+      taxasTotal += Number(p.valor) * (taxaDoPagamento(taxas, maquininhas, p.forma, p.tipo_cartao, p.maquininha_id) / 100)
     }
 
     // Vendas antigas (feitas antes do módulo de pagamentos) não têm registro em
     // `pagamentos`; nesses casos a taxa sai da forma de pagamento da própria venda.
     for (const v of vendas ?? []) {
       if (vendasComPagamento.has(v.id)) continue
-      taxasTotal += v.valor_total * (taxaDoPagamento(taxas, v.forma_pagamento) / 100)
+      taxasTotal += v.valor_total * (taxaDoPagamento(taxas, maquininhas, v.forma_pagamento) / 100)
     }
   }
 

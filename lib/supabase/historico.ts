@@ -108,11 +108,12 @@ export async function cancelarVenda(id: string, motivo: string, retornaEstoque: 
 export const FORMA_PAGAMENTO_LABEL: Record<string, string> = {
   dinheiro: 'Dinheiro',
   pix_manual: 'Pix',
-  cartao_maquininha: 'Cartão (maquininha)',
-  pix_automatico: 'Pix automático',
+  cartao: 'Cartão',
   pendente: 'Aguardando pagamento',
   // valores antigos, de vendas registradas antes desta etapa
+  cartao_maquininha: 'Cartão',
+  pix_automatico: 'Pix',
   pix: 'Pix',
-  debito: 'Débito',
-  credito: 'Crédito',
+  debito: 'Cartão (débito)',
+  credito: 'Cartão (crédito)',
 }

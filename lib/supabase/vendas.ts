@@ -7,7 +7,7 @@ export type ItemCarrinho = {
   preco_custo_unitario: number
 }
 
-export type FormaPagamento = 'dinheiro' | 'pix_manual' | 'cartao_maquininha' | 'pix_automatico'
+export type FormaPagamento = 'dinheiro' | 'pix_manual' | 'cartao'
 
 export type Pagamento = {
   id: string
@@ -38,12 +38,12 @@ export async function criarVenda(itens: ItemCarrinho[], caixaSessaoId: string): 
 
 export async function adicionarPagamentoConfirmado(input: {
   venda_id: string
-  forma: 'dinheiro' | 'cartao_maquininha'
+  forma: 'dinheiro' | 'cartao'
   valor: number
   valor_recebido?: number
   troco?: number
-  bandeira?: string
   tipo_cartao?: string
+  maquininha_id?: string | null
 }): Promise<string> {
   const supabase = createClient()
   const { data, error } = await supabase.rpc('adicionar_pagamento_confirmado', {
@@ -52,8 +52,9 @@ export async function adicionarPagamentoConfirmado(input: {
     p_valor: input.valor,
     p_valor_recebido: input.valor_recebido ?? null,
     p_troco: input.troco ?? null,
-    p_bandeira: input.bandeira ?? null,
+    p_bandeira: null,
     p_tipo_cartao: input.tipo_cartao ?? null,
+    p_maquininha_id: input.maquininha_id ?? null,
   })
   if (error) throw error
   return data as string
@@ -61,7 +62,7 @@ export async function adicionarPagamentoConfirmado(input: {
 
 export async function adicionarPagamentoPendente(input: {
   venda_id: string
-  forma: 'pix_manual' | 'pix_automatico'
+  forma: 'pix_manual'
   valor: number
   infinitepay_order_nsu?: string
 }): Promise<string> {

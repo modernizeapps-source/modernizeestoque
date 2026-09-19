@@ -1,30 +1,29 @@
 import { createClient } from './client'
 
-// Taxas cobradas por cada forma de pagamento, em porcentagem (ex: 3.5 = 3,5%).
-// Cada lojista tem contrato e maquininha diferentes, então quem preenche esses
-// valores é o próprio lojista, na tela de Configurações.
+// Taxas das formas que não são cartão. As de cartão ficam em `maquininhas`,
+// porque cada maquininha cobra diferente.
 export type TaxasPagamento = {
   dinheiro: number
   pix_manual: number
-  pix_automatico: number
-  cartao_maquininha_credito: number
-  cartao_maquininha_debito: number
 }
 
 export const TAXAS_PADRAO: TaxasPagamento = {
   dinheiro: 0,
   pix_manual: 0,
-  pix_automatico: 0,
-  cartao_maquininha_credito: 0,
-  cartao_maquininha_debito: 0,
 }
 
 export const TAXA_LABEL: Record<keyof TaxasPagamento, string> = {
   dinheiro: 'Dinheiro',
-  pix_manual: 'Pix (minha chave)',
-  pix_automatico: 'Pix automático',
-  cartao_maquininha_credito: 'Cartão — crédito',
-  cartao_maquininha_debito: 'Cartão — débito',
+  pix_manual: 'Pix',
+}
+
+export type Maquininha = {
+  id: string
+  nome: string
+  taxa_credito: number
+  taxa_debito: number
+  ativa: boolean
+  ordem: number
 }
 
 export async function buscarTaxas(): Promise<TaxasPagamento> {
@@ -61,22 +60,59 @@ export async function salvarTaxas(taxas: TaxasPagamento): Promise<void> {
   }
 }
 
-// Descobre qual taxa se aplica a um pagamento. Cartão depende de ser crédito
-// ou débito, por isso o tipo_cartao entra na conta.
+export async function listarMaquininhas(somenteAtivas = false): Promise<Maquininha[]> {
+  const supabase = createClient()
+  let query = supabase.from('maquininhas').select('*').order('ordem').order('created_at')
+  if (somenteAtivas) query = query.eq('ativa', true)
+  const { data, error } = await query
+  if (error) throw error
+  return (data as any) ?? []
+}
+
+export async function criarMaquininha(nome: string, taxaCredito: number, taxaDebito: number): Promise<Maquininha> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('maquininhas')
+    .insert({ nome, taxa_credito: taxaCredito, taxa_debito: taxaDebito })
+    .select('*')
+    .single()
+  if (error) throw error
+  return data as any
+}
+
+export async function atualizarMaquininha(id: string, input: { nome: string; taxa_credito: number; taxa_debito: number }): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase.from('maquininhas').update(input).eq('id', id)
+  if (error) throw error
+}
+
+export async function removerMaquininha(id: string): Promise<void> {
+  const supabase = createClient()
+  // Não apaga de verdade: vendas antigas apontam pra ela. Só desativa, pra
+  // sumir da tela de venda sem quebrar o histórico.
+  const { error } = await supabase.from('maquininhas').update({ ativa: false }).eq('id', id)
+  if (error) throw error
+}
+
+// Descobre a taxa de um pagamento. Cartão depende da maquininha usada e de ser
+// crédito ou débito; as outras formas vêm das configurações gerais.
 export function taxaDoPagamento(
   taxas: TaxasPagamento,
+  maquininhas: Maquininha[],
   forma: string,
-  tipoCartao?: string | null
+  tipoCartao?: string | null,
+  maquininhaId?: string | null
 ): number {
-  if (forma === 'cartao_maquininha') {
-    return tipoCartao === 'debito' ? taxas.cartao_maquininha_debito : taxas.cartao_maquininha_credito
+  if (forma === 'cartao' || forma === 'cartao_maquininha' || forma === 'credito' || forma === 'debito') {
+    const maq = maquininhaId ? maquininhas.find((m) => m.id === maquininhaId) : null
+    const ehDebito = tipoCartao === 'debito' || forma === 'debito'
+    if (maq) return ehDebito ? Number(maq.taxa_debito) : Number(maq.taxa_credito)
+    // pagamento antigo, sem maquininha registrada: usa a média das cadastradas
+    if (maquininhas.length === 0) return 0
+    const soma = maquininhas.reduce((s, m) => s + Number(ehDebito ? m.taxa_debito : m.taxa_credito), 0)
+    return soma / maquininhas.length
   }
   if (forma === 'dinheiro') return taxas.dinheiro
-  if (forma === 'pix_manual') return taxas.pix_manual
-  if (forma === 'pix_automatico') return taxas.pix_automatico
-  // formas antigas, de vendas registradas antes desta etapa
-  if (forma === 'credito') return taxas.cartao_maquininha_credito
-  if (forma === 'debito') return taxas.cartao_maquininha_debito
-  if (forma === 'pix') return taxas.pix_manual
+  if (forma === 'pix_manual' || forma === 'pix' || forma === 'pix_automatico') return taxas.pix_manual
   return 0
 }

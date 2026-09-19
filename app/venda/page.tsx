@@ -13,13 +13,13 @@ import {
   ItemCarrinho,
 } from '@/lib/supabase/vendas'
 import { buscarCaixaAberto, CaixaSessao } from '@/lib/supabase/caixa'
+import { Maquininha, listarMaquininhas } from '@/lib/supabase/configuracoes'
 import { useLeitorCodigoBarras } from '@/lib/useLeitorCodigoBarras'
 
-const FORMAS_PAGAMENTO: { id: 'dinheiro' | 'pix_manual' | 'cartao_maquininha' | 'pix_automatico'; nome: string }[] = [
-  { id: 'pix_automatico', nome: 'Pix (QR automático)' },
-  { id: 'pix_manual', nome: 'Pix (minha chave)' },
-  { id: 'cartao_maquininha', nome: 'Cartão (maquininha)' },
+const FORMAS_PAGAMENTO: { id: 'dinheiro' | 'pix_manual' | 'cartao'; nome: string }[] = [
   { id: 'dinheiro', nome: 'Dinheiro' },
+  { id: 'pix_manual', nome: 'Pix' },
+  { id: 'cartao', nome: 'Cartão' },
 ]
 
 function reais(v: number) {
@@ -30,8 +30,7 @@ type EtapaCheckout =
   | 'escolhendo_forma'
   | 'pagamento_dinheiro'
   | 'pagamento_pix_manual'
-  | 'pagamento_maquininha'
-  | 'pagamento_pix_automatico'
+  | 'pagamento_cartao'
 
 export default function VendaPage() {
   const [produtos, setProdutos] = useState<Produto[]>([])
@@ -62,24 +61,21 @@ export default function VendaPage() {
   // Vazio = o valor restante inteiro.
   const [valorParcial, setValorParcial] = useState('')
 
-  // pagamento na maquininha
+  // pagamento no cartão
+  const [maquininhas, setMaquininhas] = useState<Maquininha[]>([])
+  const [maquininhaId, setMaquininhaId] = useState<string | null>(null)
   const [tipoCartao, setTipoCartao] = useState<'credito' | 'debito'>('credito')
-
-  // pix automático
-  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null)
-  const [qrCodeImagem, setQrCodeImagem] = useState<string | null>(null)
-  const [pagamentoPixId, setPagamentoPixId] = useState<string | null>(null)
-  // valor que foi efetivamente cobrado no QR gerado (fica fixo enquanto o
-  // cliente paga, mesmo que a tela recalcule outras coisas)
-  const [valorPixCobrado, setValorPixCobrado] = useState(0)
 
   async function carregarDados() {
     setCarregando(true)
     try {
-      const [p, c, sessao] = await Promise.all([listarProdutos(), listarCategorias(), buscarCaixaAberto()])
+      const [p, c, sessao, maqs] = await Promise.all([
+        listarProdutos(), listarCategorias(), buscarCaixaAberto(), listarMaquininhas(true),
+      ])
       setProdutos(p)
       setCategorias(c)
       setCaixa(sessao)
+      setMaquininhas(maqs)
     } catch (e) {
       setErro('Não foi possível carregar os produtos.')
     } finally {
@@ -188,19 +184,17 @@ export default function VendaPage() {
     setPagamentoPixId(null)
   }
 
-  async function handleEscolherForma(forma: 'dinheiro' | 'pix_manual' | 'cartao_maquininha' | 'pix_automatico') {
+  function handleEscolherForma(forma: 'dinheiro' | 'pix_manual' | 'cartao') {
     setErroCheckout(null)
     if (forma === 'dinheiro') {
       setValorRecebido('')
       setEtapa('pagamento_dinheiro')
     } else if (forma === 'pix_manual') {
       setEtapa('pagamento_pix_manual')
-    } else if (forma === 'cartao_maquininha') {
+    } else if (forma === 'cartao') {
       setTipoCartao('credito')
-      setEtapa('pagamento_maquininha')
-    } else if (forma === 'pix_automatico') {
-      setEtapa('pagamento_pix_automatico')
-      await iniciarPixAutomatico()
+      setMaquininhaId(maquininhas.length > 0 ? maquininhas[0].id : null)
+      setEtapa('pagamento_cartao')
     }
   }
 
@@ -267,16 +261,21 @@ export default function VendaPage() {
     }
   }
 
-  async function handleConfirmarMaquininha() {
+  async function handleConfirmarCartao() {
     if (!vendaId) return
+    if (maquininhas.length > 0 && !maquininhaId) {
+      setErroCheckout('Escolha em qual maquininha foi passado.')
+      return
+    }
     setProcessando(true)
     setErroCheckout(null)
     try {
       await adicionarPagamentoConfirmado({
         venda_id: vendaId,
-        forma: 'cartao_maquininha',
+        forma: 'cartao',
         valor: valorACobrar,
         tipo_cartao: tipoCartao,
+        maquininha_id: maquininhaId,
       })
       await aposPagamentoConfirmado(valorACobrar)
     } catch (e: any) {
@@ -286,56 +285,6 @@ export default function VendaPage() {
     }
   }
 
-  async function iniciarPixAutomatico() {
-    if (!vendaId) return
-    setProcessando(true)
-    setErroCheckout(null)
-    setQrCodeUrl(null)
-    setQrCodeImagem(null)
-    try {
-      const resp = await fetch('/api/pagamentos/pix-automatico/criar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ venda_id: vendaId, valor: valorACobrar }),
-      })
-      const dados = await resp.json()
-      if (!resp.ok) throw new Error(dados.erro || 'Não foi possível gerar o QR Code.')
-
-      setPagamentoPixId(dados.pagamento_id)
-      setQrCodeUrl(dados.url)
-      setValorPixCobrado(valorACobrar)
-
-      // gera a imagem do QR Code a partir do link, usando a biblioteca "qrcode"
-      const QRCode = (await import('qrcode')).default
-      const imagem = await QRCode.toDataURL(dados.url, { width: 260, margin: 1 })
-      setQrCodeImagem(imagem)
-    } catch (e: any) {
-      setErroCheckout(e?.message ?? 'Não foi possível gerar o QR Code.')
-    } finally {
-      setProcessando(false)
-    }
-  }
-
-  // Fica checando de tempos em tempos se o Pix automático já foi pago
-  useEffect(() => {
-    if (etapa !== 'pagamento_pix_automatico' || !pagamentoPixId) return
-
-    const intervalo = setInterval(async () => {
-      try {
-        const resp = await fetch(`/api/pagamentos/pix-automatico/status?pagamento_id=${pagamentoPixId}`)
-        const dados = await resp.json()
-        if (dados.status === 'confirmado') {
-          clearInterval(intervalo)
-          await aposPagamentoConfirmado(valorPixCobrado)
-        }
-      } catch (e) {
-        // tenta de novo no próximo intervalo
-      }
-    }, 3000)
-
-    return () => clearInterval(intervalo)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [etapa, pagamentoPixId])
 
   if (carregando) return <p style={{ position: 'relative', zIndex: 1, textAlign: 'center', marginTop: 60, color: 'var(--text-dim)' }}>Carregando...</p>
 
@@ -529,12 +478,36 @@ export default function VendaPage() {
               </>
             )}
 
-            {etapa === 'pagamento_maquininha' && (
+            {etapa === 'pagamento_cartao' && (
               <>
-                <h2 style={{ fontSize: 16, fontWeight: 500, marginBottom: 14 }}>Cartão na maquininha</h2>
+                <h2 style={{ fontSize: 16, fontWeight: 500, marginBottom: 14 }}>Cartão</h2>
                 <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 4 }}>Valor a cobrar</p>
                 <p className="mono" style={{ fontSize: 22, color: 'var(--cyan)', marginBottom: 16 }}>{reais(valorACobrar)}</p>
                 <p style={{ fontSize: 13, marginBottom: 16 }}>Faça a cobrança na maquininha. Depois, registre aqui como foi pago.</p>
+
+                {maquininhas.length > 0 && (
+                  <>
+                    <label className="label">Maquininha</label>
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+                      {maquininhas.map((m) => (
+                        <button
+                          key={m.id}
+                          onClick={() => setMaquininhaId(m.id)}
+                          className={`pill ${maquininhaId === m.id ? 'pill-active' : ''}`}
+                        >
+                          {m.nome}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {maquininhas.length === 0 && (
+                  <div style={{ background: 'rgba(255,180,84,0.1)', border: '1px solid rgba(255,180,84,0.3)', color: 'var(--amber)', padding: 10, borderRadius: 10, marginBottom: 16, fontSize: 12.5, lineHeight: 1.5 }}>
+                    Nenhuma maquininha cadastrada. A venda funciona normalmente, mas o lucro não vai
+                    descontar a taxa. Cadastre em Configurações.
+                  </div>
+                )}
 
                 <label className="label">Tipo</label>
                 <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
@@ -546,36 +519,9 @@ export default function VendaPage() {
 
                 <div style={{ display: 'flex', gap: 10 }}>
                   <button onClick={() => setEtapa('escolhendo_forma')} className="btn-secondary" style={{ flex: 1, padding: 12 }}>Voltar</button>
-                  <button onClick={handleConfirmarMaquininha} disabled={processando} className="btn-primary" style={{ flex: 2, padding: 12 }}>
+                  <button onClick={handleConfirmarCartao} disabled={processando} className="btn-primary" style={{ flex: 2, padding: 12 }}>
                     {processando ? 'Registrando...' : 'Confirmar aprovado'}
                   </button>
-                </div>
-              </>
-            )}
-
-            {etapa === 'pagamento_pix_automatico' && (
-              <>
-                <h2 style={{ fontSize: 16, fontWeight: 500, marginBottom: 14 }}>Pix automático</h2>
-                <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 4 }}>Valor a receber</p>
-                <p className="mono" style={{ fontSize: 22, color: 'var(--cyan)', marginBottom: 16 }}>{reais(qrCodeImagem ? valorPixCobrado : valorACobrar)}</p>
-
-                {processando && !qrCodeImagem && <p style={{ fontSize: 13, color: 'var(--text-dim)' }}>Gerando QR Code...</p>}
-
-                {qrCodeImagem && (
-                  <div style={{ textAlign: 'center', marginBottom: 16 }}>
-                    <img src={qrCodeImagem} alt="QR Code Pix" style={{ width: 220, height: 220, borderRadius: 10, background: '#fff', padding: 8 }} />
-                    <p style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 10 }}>Peça pro cliente escanear com o celular. A tela atualiza sozinha assim que cair.</p>
-                    <p className="mono" style={{ fontSize: 12, color: 'var(--cyan)', marginTop: 6 }}>Aguardando pagamento...</p>
-                  </div>
-                )}
-
-                {erroCheckout && <p className="error-text" style={{ marginBottom: 10 }}>{erroCheckout}</p>}
-
-                <div style={{ display: 'flex', gap: 10 }}>
-                  <button onClick={() => setEtapa('escolhendo_forma')} className="btn-secondary" style={{ flex: 1, padding: 12 }}>Voltar</button>
-                  {!qrCodeImagem && !processando && (
-                    <button onClick={iniciarPixAutomatico} className="btn-primary" style={{ flex: 2, padding: 12 }}>Tentar de novo</button>
-                  )}
                 </div>
               </>
             )}

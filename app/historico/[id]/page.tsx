@@ -102,7 +102,7 @@ export default function DetalheVendaPage() {
                   {p.status === 'confirmado' && 'Confirmado'}
                   {p.status === 'pendente' && 'Aguardando'}
                   {p.status === 'falhou' && 'Não concluído'}
-                  {p.status === 'estorno_pendente' && 'Estorno pendente (fazer manualmente no app da InfinitePay)'}
+                  {p.status === 'estorno_pendente' && 'Estorno pendente — devolver pelo app da maquininha'}
                   {p.status === 'estornado' && 'Estornado'}
                 </div>
               </div>
@@ -143,7 +143,7 @@ export default function DetalheVendaPage() {
 
       {!cancelada && !mostrarMotivo && !aguardandoPagamento && (
         <p style={{ fontSize: 11, color: 'var(--text-dim)', textAlign: 'center', marginTop: 8 }}>
-          Você escolhe se os produtos voltam pro estoque. Pagamentos em dinheiro são estornados na hora pelo caixa; Pix/cartão automático ficam marcados como pendente pra você estornar no app da InfinitePay.
+          Você escolhe se os produtos voltam pro estoque. Pagamentos em dinheiro são estornados na hora pelo caixa; Pix e cartão ficam marcados como pendente, pra você devolver pelo app do banco ou da maquininha.
         </p>
       )}
     </div>
