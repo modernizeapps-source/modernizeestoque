@@ -1,4 +1,8 @@
-# Estoque Mercadinho — Pacote 4
+# Estoque Mercadinho — Pacote 4 (corrigido)
+
+> Se você tentou subir a versão anterior deste pacote e o deploy falhou com
+> "Cannot find name 'setQrCodeUrl'", era um erro meu: sobraram três linhas do
+> Pix automático que eu havia removido. Já está corrigido aqui.
 
 ## Nada pra configurar
 O banco já foi atualizado. Só subir no GitHub e rodar:

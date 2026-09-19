@@ -179,9 +179,6 @@ export default function VendaPage() {
     setEtapa('escolhendo_forma')
     setErroCheckout(null)
     setValorParcial('')
-    setQrCodeUrl(null)
-    setQrCodeImagem(null)
-    setPagamentoPixId(null)
   }
 
   function handleEscolherForma(forma: 'dinheiro' | 'pix_manual' | 'cartao') {
@@ -208,9 +205,6 @@ export default function VendaPage() {
       setMostrarCheckout(false)
       setCarrinho({})
       setVendaId(null)
-      setQrCodeUrl(null)
-      setQrCodeImagem(null)
-      setPagamentoPixId(null)
       setValorParcial('')
       await carregarDados()
       setTimeout(() => setSucesso(false), 2500)
