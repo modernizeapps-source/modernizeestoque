@@ -1,4 +1,4 @@
-# Estoque Mercadinho — Pacote 7: todas as telas no computador
+# Estoque Mercadinho — Pacote 8: painel inicial no computador
 
 ## Nada pra configurar
 Sem mudança de banco. Só subir no GitHub e rodar:
@@ -7,52 +7,58 @@ Sem mudança de banco. Só subir no GitHub e rodar:
 ---
 
 ## O celular continua intacto
-
-Comparei automaticamente o que o celular renderiza antes e depois, tela por
-tela: **idêntico em todas**. As regras de layout novo só ativam a partir de
-1024px de largura, que nenhum celular ou tablet alcança.
-
-Na tela inicial tem uma diferença proposital: no computador o título vira
-"Resumo de hoje" e os botões de navegação somem (já estão na barra do topo).
-No celular, continua tudo igual.
+Como sempre: conferi automaticamente e o que o celular renderiza é idêntico ao
+de antes. A tela inicial do celular nem passa pelo código novo — ele fica num
+componente separado que só é usado acima de 1024px.
 
 ---
 
-## O que mudou no computador
+## A tela inicial virou um painel
 
-### Barra de navegação em todas as telas
-Venda · Produtos · Caixa · Histórico · Relatórios · Configurações, sempre no
-topo, com a seção atual destacada. O link "← Voltar" some no computador, já que
-a navegação está sempre à mão.
+Aquele vazio no computador foi preenchido com informação útil, toda ela vinda
+de dados que o sistema já tinha.
 
-### Início
-Os quatro números do dia (total vendido, lucro, vendas, estoque baixo) ficam
-lado a lado numa linha só, em cards maiores.
+### Botão "Nova venda" em destaque
+Grande, no topo à direita, com brilho ciano. É a primeira coisa que chama
+atenção. O "Sair" foi pra barra do topo, discreto, pra não competir.
 
-### Produtos e Histórico
-As listas viram grade de vários cards por linha, em vez de uma coluna estreita.
-Passar o mouse destaca o card.
+### Os quatro números, agora numa linha só
+E com contexto embaixo de cada um:
+- **Total vendido** — com a comparação com ontem (↑ ou ↓ em %)
+- **Lucro** — mostrando quanto foi descontado de taxa
+- **Vendas hoje** — com o ticket médio
+- **Estoque baixo** — clicável, leva pra Produtos
 
-### Caixa, Configurações, cadastro de produto
-Continuam em coluna centralizada — formulário largo demais fica ruim de ler —
-mas com mais respiro e títulos maiores.
+### Gráfico dos últimos 7 dias
+Barras com o faturamento de cada dia. Hoje aparece destacado em ciano. Passando
+o mouse, mostra o valor exato.
 
-### Relatórios
-Os quatro números da visão geral ficam lado a lado. O resto das seções ganhou
-largura.
+### Últimas vendas
+As 5 últimas de hoje, com hora e o que foi vendido. Clicando, abre o detalhe.
 
-### Detalhes gerais
-Botões e pills reagem ao passar o mouse. Títulos maiores. Tudo com mais espaço.
+### Caixa
+Saldo em dinheiro do caixa aberto e a hora que foi aberto. Se não tiver caixa
+aberto, vira um aviso com botão pra abrir.
+
+### Como pagaram hoje
+Barras proporcionais por forma de pagamento.
+
+### Precisa repor
+Lista dos produtos com estoque baixo, clicáveis — vão direto pra tela do
+produto, onde tem o "Chegou mercadoria".
+
+### Barra de navegação
+Ganhou o item **Início** no começo. O destaque da seção atual agora funciona
+certo — na tela inicial, "Início" fica marcado.
 
 ---
 
 ## Roteiro de teste
 
-1. Abre **no computador** e navega por todas as telas pela barra do topo
-2. Confere se a seção atual fica destacada em ciano
-3. Em **Produtos**, vê se a lista virou grade
-4. Em **Início**, vê se os quatro números estão numa linha
-5. Passa o mouse nos cards e botões — devem reagir
-6. **Abre no celular** e confere que está exatamente como antes
-
-Se alguma tela específica ficar estranha, me diz qual que eu ajusto ela sozinha.
+1. Abre **no computador** — a tela inicial deve estar cheia de informação
+2. Confere se "Início" está destacado na barra do topo
+3. Vê se o gráfico dos 7 dias mostra as barras (hoje em ciano)
+4. Clica numa das últimas vendas — deve abrir o detalhe
+5. Clica num produto em "Precisa repor" — deve abrir a tela dele
+6. Clica em "Nova venda" — deve ir pra tela de venda
+7. **Abre no celular** e confirma que a tela inicial está como sempre foi

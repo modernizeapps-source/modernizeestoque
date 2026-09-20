@@ -3,11 +3,12 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { buscarResumoHoje, ResumoHoje } from '@/lib/supabase/dashboard'
+import { buscarResumoHoje, ResumoHoje, buscarPainelDesktop, PainelDesktop } from '@/lib/supabase/dashboard'
 import { buscarCaixaAberto } from '@/lib/supabase/caixa'
 import { FORMA_PAGAMENTO_LABEL } from '@/lib/supabase/historico'
 import { useIsDesktop } from '@/lib/useIsDesktop'
 import NavDesktop from './NavDesktop'
+import PainelInicioDesktop from './PainelInicioDesktop'
 
 function reais(v: number) {
   return `R$ ${v.toFixed(2).replace('.', ',')}`
@@ -21,6 +22,7 @@ export default function HomePage() {
   const [resumo, setResumo] = useState<ResumoHoje | null>(null)
   const [carregandoResumo, setCarregandoResumo] = useState(false)
   const [caixaAberto, setCaixaAberto] = useState<boolean | null>(null)
+  const [painel, setPainel] = useState<PainelDesktop | null>(null)
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -34,6 +36,13 @@ export default function HomePage() {
       }
     })
   }, [])
+
+  // Os dados extras do painel só são buscados no computador — assim o
+  // carregamento no celular continua exatamente igual ao de antes.
+  useEffect(() => {
+    if (!isDesktop || !email) return
+    buscarPainelDesktop().then(setPainel).catch(() => setPainel(null))
+  }, [isDesktop, email])
 
   async function handleSair() {
     await supabase.auth.signOut()
@@ -59,14 +68,26 @@ export default function HomePage() {
     )
   }
 
+  if (isDesktop) {
+    return (
+      <>
+        <NavDesktop statusCaixa={caixaAberto ? 'caixa aberto' : undefined} onSair={handleSair} />
+        {resumo ? (
+          <PainelInicioDesktop resumo={resumo} painel={painel} />
+        ) : (
+          <p style={{ position: 'relative', zIndex: 1, textAlign: 'center', marginTop: 60, color: 'var(--text-dim)' }}>
+            Carregando...
+          </p>
+        )}
+      </>
+    )
+  }
+
   return (
     <>
-    {isDesktop && <NavDesktop statusCaixa={caixaAberto ? 'caixa aberto' : undefined} />}
     <div className="container">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <h1 className="titulo-pagina" style={{ fontSize: 20, fontWeight: 500 }}>
-          {isDesktop ? 'Resumo de hoje' : 'Estoque Mercadinho'}
-        </h1>
+        <h1 style={{ fontSize: 20, fontWeight: 500 }}>Estoque Mercadinho</h1>
         <button onClick={handleSair} className="btn-secondary" style={{ padding: '6px 12px', fontSize: 13 }}>Sair</button>
       </div>
 
@@ -75,7 +96,7 @@ export default function HomePage() {
       {resumo && (
         <>
           <p className="subtitle" style={{ marginBottom: 8 }}>Hoje</p>
-          <div className="metricas-desktop" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
             <div className="card card-accent">
               <div className="mono" style={{ fontSize: 10, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Total vendido</div>
               <div className="mono" style={{ fontSize: 20, fontWeight: 500, marginTop: 6, color: 'var(--cyan)' }}>{reais(resumo.totalVendido)}</div>
@@ -86,7 +107,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="metricas-desktop" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
             <div className="card">
               <div className="mono" style={{ fontSize: 10, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Vendas hoje</div>
               <div style={{ fontSize: 18, fontWeight: 600, marginTop: 6 }}>{resumo.numVendas}</div>
@@ -127,18 +148,14 @@ export default function HomePage() {
         </Link>
       )}
 
-      {isDesktop ? (
-        <Link href="/venda" className="btn-primary" style={{ padding: '14px 26px', fontSize: 15 }}>Nova venda</Link>
-      ) : (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-          <Link href="/venda" className="btn-primary">Nova venda</Link>
-          <Link href="/caixa" className="btn-secondary">Caixa {caixaAberto ? '· aberto' : ''}</Link>
-          <Link href="/historico" className="btn-secondary">Histórico</Link>
-          <Link href="/produtos" className="btn-secondary">Produtos</Link>
-          <Link href="/relatorios" className="btn-secondary">Relatórios</Link>
-          <Link href="/configuracoes" className="btn-secondary">Configurações</Link>
-        </div>
-      )}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+        <Link href="/venda" className="btn-primary">Nova venda</Link>
+        <Link href="/caixa" className="btn-secondary">Caixa {caixaAberto ? '· aberto' : ''}</Link>
+        <Link href="/historico" className="btn-secondary">Histórico</Link>
+        <Link href="/produtos" className="btn-secondary">Produtos</Link>
+        <Link href="/relatorios" className="btn-secondary">Relatórios</Link>
+        <Link href="/configuracoes" className="btn-secondary">Configurações</Link>
+      </div>
     </div>
     </>
   )

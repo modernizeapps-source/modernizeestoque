@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 const LINKS = [
+  { href: '/', nome: 'Início' },
   { href: '/venda', nome: 'Venda' },
   { href: '/produtos', nome: 'Produtos' },
   { href: '/caixa', nome: 'Caixa' },
@@ -14,7 +15,7 @@ const LINKS = [
 
 // Barra de navegação fixa no topo — só aparece no layout de computador.
 // No celular, a navegação continua sendo pela tela inicial, como sempre foi.
-export default function NavDesktop({ statusCaixa }: { statusCaixa?: string }) {
+export default function NavDesktop({ statusCaixa, onSair }: { statusCaixa?: string; onSair?: () => void }) {
   const pathname = usePathname()
 
   return (
@@ -39,7 +40,9 @@ export default function NavDesktop({ statusCaixa }: { statusCaixa?: string }) {
 
         <nav style={{ display: 'flex', gap: 2, flex: 1 }}>
           {LINKS.map((l) => {
-            const ativo = pathname === l.href || pathname.startsWith(l.href + '/')
+            const ativo = l.href === '/'
+              ? pathname === '/'
+              : pathname === l.href || pathname.startsWith(l.href + '/')
             return (
               <Link
                 key={l.href}
@@ -61,18 +64,31 @@ export default function NavDesktop({ statusCaixa }: { statusCaixa?: string }) {
           })}
         </nav>
 
-        {statusCaixa && (
-          <div className="mono" style={{
-            fontSize: 11.5, color: 'var(--green)',
-            display: 'flex', alignItems: 'center', gap: 7, whiteSpace: 'nowrap',
-          }}>
-            <span style={{
-              width: 6, height: 6, borderRadius: '50%',
-              background: 'var(--green)', boxShadow: '0 0 8px var(--green)',
-            }} />
-            {statusCaixa}
-          </div>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          {statusCaixa && (
+            <div className="mono" style={{
+              fontSize: 11.5, color: 'var(--green)',
+              display: 'flex', alignItems: 'center', gap: 7, whiteSpace: 'nowrap',
+            }}>
+              <span style={{
+                width: 6, height: 6, borderRadius: '50%',
+                background: 'var(--green)', boxShadow: '0 0 8px var(--green)',
+              }} />
+              {statusCaixa}
+            </div>
+          )}
+          {onSair && (
+            <button
+              onClick={onSair}
+              style={{
+                border: 'none', background: 'none', color: 'var(--text-dim)',
+                fontSize: 12.5, cursor: 'pointer', padding: '4px 2px', fontFamily: 'inherit',
+              }}
+            >
+              Sair
+            </button>
+          )}
+        </div>
       </div>
     </div>
   )
