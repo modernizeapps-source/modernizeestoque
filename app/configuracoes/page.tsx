@@ -157,55 +157,6 @@ export default function ConfiguracoesPage() {
       {erro && <p className="error-text" style={{ marginTop: 12 }}>{erro}</p>}
       {sucesso && <div className="success-box" style={{ marginTop: 12 }}>✓ {sucesso}</div>}
 
-      {/* Voltar pro início sozinho */}
-      <p className="section-title" style={{ marginTop: 22 }}>Voltar para o início sozinho</p>
-      <p style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 14, lineHeight: 1.55 }}>
-        Se ninguém mexer no sistema por um tempo, ele volta pra tela inicial sozinho.
-        Isso não atrapalha quem está no meio de uma venda — qualquer clique ou leitura
-        de código reinicia a contagem.
-      </p>
-
-      <div className="card" style={{ marginBottom: 14 }}>
-        <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginBottom: 14 }}>
-          {[0, 3, 5, 10, 15, 30].map((min) => (
-            <button
-              key={min}
-              onClick={() => { setMinutosInatividade(min); setMinutosPersonalizado('') }}
-              className={`pill ${minutosInatividade === min ? 'pill-active' : ''}`}
-            >
-              {min === 0 ? 'Nunca' : `${min} min`}
-            </button>
-          ))}
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 9, paddingTop: 13, borderTop: '1px solid var(--line)' }}>
-          <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>ou um tempo próprio:</span>
-          <input
-            type="number"
-            min="1"
-            value={minutosPersonalizado}
-            onChange={(e) => {
-              setMinutosPersonalizado(e.target.value)
-              const n = parseInt(e.target.value || '0', 10)
-              if (n > 0) setMinutosInatividade(n)
-            }}
-            placeholder="—"
-            className="input"
-            style={{ width: 72, textAlign: 'right', padding: '8px 10px' }}
-          />
-          <span className="mono" style={{ fontSize: 12, color: 'var(--text-dim)' }}>min</span>
-        </div>
-      </div>
-
-      <button
-        onClick={handleSalvarInatividade}
-        disabled={salvandoInatividade}
-        className="btn-primary"
-        style={{ width: '100%', padding: 12, marginBottom: 30 }}
-      >
-        {salvandoInatividade ? 'Salvando...' : 'Salvar'}
-      </button>
-
       {/* Maquininhas */}
       <p className="section-title">Maquininhas de cartão</p>
       <p style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 14, lineHeight: 1.5 }}>
@@ -326,6 +277,56 @@ export default function ConfiguracoesPage() {
           {salvando ? 'Salvando...' : 'Salvar taxas'}
         </button>
       </form>
+
+      {/* Voltar pro início sozinho */}
+      <div style={{ height: 1, background: 'var(--line)', margin: '28px 0' }} />
+      <p className="section-title">Voltar para o início sozinho</p>
+      <p style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 14, lineHeight: 1.55 }}>
+        Se ninguém mexer no sistema por um tempo, ele volta pra tela inicial sozinho.
+        Isso não atrapalha quem está no meio de uma venda — qualquer clique ou leitura
+        de código reinicia a contagem.
+      </p>
+
+      <div className="card" style={{ marginBottom: 14 }}>
+        <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginBottom: 14 }}>
+          {[0, 3, 5, 10, 15, 30].map((min) => (
+            <button
+              key={min}
+              onClick={() => { setMinutosInatividade(min); setMinutosPersonalizado('') }}
+              className={`pill ${minutosInatividade === min ? 'pill-active' : ''}`}
+            >
+              {min === 0 ? 'Nunca' : `${min} min`}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9, paddingTop: 13, borderTop: '1px solid var(--line)' }}>
+          <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>ou um tempo próprio:</span>
+          <input
+            type="number"
+            min="1"
+            value={minutosPersonalizado}
+            onChange={(e) => {
+              setMinutosPersonalizado(e.target.value)
+              const n = parseInt(e.target.value || '0', 10)
+              if (n > 0) setMinutosInatividade(n)
+            }}
+            placeholder="—"
+            className="input"
+            style={{ width: 72, textAlign: 'right', padding: '8px 10px' }}
+          />
+          <span className="mono" style={{ fontSize: 12, color: 'var(--text-dim)' }}>min</span>
+        </div>
+      </div>
+
+      <button
+        onClick={handleSalvarInatividade}
+        disabled={salvandoInatividade}
+        className="btn-primary"
+        style={{ width: '100%', padding: 12, marginBottom: 8 }}
+      >
+        {salvandoInatividade ? 'Salvando...' : 'Salvar'}
+      </button>
     </div>
     </>
   )
