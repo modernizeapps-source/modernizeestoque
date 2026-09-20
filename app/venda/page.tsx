@@ -15,6 +15,9 @@ import {
 import { buscarCaixaAberto, CaixaSessao } from '@/lib/supabase/caixa'
 import { Maquininha, listarMaquininhas } from '@/lib/supabase/configuracoes'
 import { useLeitorCodigoBarras } from '@/lib/useLeitorCodigoBarras'
+import { useIsDesktop } from '@/lib/useIsDesktop'
+import NavDesktop from '../NavDesktop'
+import VendaDesktop from './VendaDesktop'
 
 const FORMAS_PAGAMENTO: { id: 'dinheiro' | 'pix_manual' | 'cartao'; nome: string }[] = [
   { id: 'dinheiro', nome: 'Dinheiro' },
@@ -33,6 +36,7 @@ type EtapaCheckout =
   | 'pagamento_cartao'
 
 export default function VendaPage() {
+  const isDesktop = useIsDesktop()
   const [produtos, setProdutos] = useState<Produto[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [categoriaId, setCategoriaId] = useState<string | null>(null)
@@ -111,6 +115,15 @@ export default function VendaPage() {
   const valorACobrar = valorParcial.trim() !== '' && valorParcialNum > 0
     ? Math.round(Math.min(valorParcialNum, valorRestante) * 100) / 100
     : valorRestante
+
+  function limparCarrinho() {
+    setCarrinho({})
+  }
+
+  function voltarParaFormas() {
+    setErroCheckout(null)
+    setEtapa('escolhendo_forma')
+  }
 
   function alterarQuantidade(produtoId: string, delta: number) {
     setCarrinho((prev) => {
@@ -285,18 +298,110 @@ export default function VendaPage() {
   }
 
 
+  // Atalhos de teclado, só no computador: Enter finaliza a venda, Esc limpa o
+  // carrinho ou volta um passo no pagamento. Não atrapalha quem está digitando
+  // num campo, nem o leitor de código de barras (que termina com Enter, mas é
+  // tratado antes por useLeitorCodigoBarras).
+  useEffect(() => {
+    if (!isDesktop || carregando || !caixa) return
+
+    function aoTeclar(e: KeyboardEvent) {
+      const alvo = e.target as HTMLElement | null
+      const digitando = alvo && (alvo.tagName === 'INPUT' || alvo.tagName === 'TEXTAREA')
+
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        if (mostrarCheckout) {
+          if (etapa === 'escolhendo_forma') fecharCheckoutSemPagar()
+          else voltarParaFormas()
+        } else {
+          setCarrinho({})
+        }
+        return
+      }
+
+      if (e.key === 'Enter' && !digitando && !mostrarCheckout) {
+        const temItem = Object.values(carrinho).some((q) => q > 0)
+        if (temItem) {
+          e.preventDefault()
+          abrirCheckout()
+        }
+      }
+    }
+
+    window.addEventListener('keydown', aoTeclar)
+    return () => window.removeEventListener('keydown', aoTeclar)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDesktop, carregando, caixa, mostrarCheckout, etapa, carrinho])
+
   if (carregando) return <p style={{ position: 'relative', zIndex: 1, textAlign: 'center', marginTop: 60, color: 'var(--text-dim)' }}>Carregando...</p>
 
   if (!caixa) {
     return (
-      <div className="container" style={{ maxWidth: 420 }}>
+      <>
+        {isDesktop && <NavDesktop />}
+        <div className="container" style={{ maxWidth: 420 }}>
         <Link href="/" className="back-link">← Voltar</Link>
         <h1 style={{ fontSize: 20, fontWeight: 500, marginBottom: 16 }}>Venda</h1>
         <div className="card" style={{ textAlign: 'center', padding: 24 }}>
           <p style={{ marginBottom: 14 }}>Ainda não tem um caixa aberto hoje.</p>
           <Link href="/caixa" className="btn-primary" style={{ width: '100%' }}>Abrir caixa</Link>
+          </div>
         </div>
-      </div>
+      </>
+    )
+  }
+
+  // No computador, layout próprio de duas colunas. No celular, o layout de
+  // sempre — o JSX abaixo é exatamente o mesmo de antes desta mudança.
+  if (isDesktop) {
+    return (
+      <>
+        <NavDesktop statusCaixa={`caixa aberto · ${reais(Number(caixa.valor_inicial))} inicial`} />
+        <VendaDesktop
+          produtos={produtos}
+          produtosFiltrados={produtosFiltrados}
+          categorias={categorias}
+          categoriaId={categoriaId}
+          busca={busca}
+          carrinho={carrinho}
+          itensCarrinho={itensCarrinho}
+          totalItens={totalItens}
+          totalValor={totalValor}
+          valorPago={valorPago}
+          valorRestante={valorRestante}
+          valorACobrar={valorACobrar}
+          valorParcial={valorParcial}
+          maquininhas={maquininhas}
+          maquininhaId={maquininhaId}
+          pixMaquininhaId={pixMaquininhaId}
+          tipoCartao={tipoCartao}
+          valorRecebido={valorRecebido}
+          codigoNaoEncontrado={codigoNaoEncontrado}
+          sucesso={sucesso}
+          etapa={etapa}
+          mostrarCheckout={mostrarCheckout}
+          processando={processando}
+          erroCheckout={erroCheckout}
+          saldoCaixa={reais(Number(caixa.valor_inicial))}
+          setBusca={setBusca}
+          setCategoriaId={setCategoriaId}
+          alterarQuantidade={alterarQuantidade}
+          limparCarrinho={limparCarrinho}
+          abrirCheckout={abrirCheckout}
+          fecharCheckoutSemPagar={fecharCheckoutSemPagar}
+          handleEscolherForma={handleEscolherForma}
+          setValorParcial={setValorParcial}
+          setValorRecebido={setValorRecebido}
+          setMaquininhaId={setMaquininhaId}
+          setPixMaquininhaId={setPixMaquininhaId}
+          setTipoCartao={setTipoCartao}
+          handleConfirmarDinheiro={handleConfirmarDinheiro}
+          handleConfirmarPixManual={handleConfirmarPixManual}
+          handleConfirmarCartao={handleConfirmarCartao}
+          voltarParaFormas={voltarParaFormas}
+        />
+      </>
     )
   }
 

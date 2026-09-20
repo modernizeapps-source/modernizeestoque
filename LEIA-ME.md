@@ -1,57 +1,71 @@
-# Estoque Mercadinho — Pacote 5
+# Estoque Mercadinho — Pacote 6: tela de venda no computador
 
 ## Nada pra configurar
-O banco já foi atualizado. Só subir no GitHub e rodar:
+Nem banco de dados dessa vez. Só subir no GitHub e rodar:
 **Netlify → Deploys → Trigger deploy → Deploy project without cache**
 
 ---
 
-## Pix nas maquininhas
+## O celular não mudou
 
-Muitas maquininhas também recebem Pix, com taxa própria — diferente do Pix que
-cai direto na sua chave. Agora o sistema separa os dois.
+Antes de qualquer coisa: **o layout do celular está intacto.** Comparei o código
+antigo com o novo caractere por caractere e são idênticos.
 
-### No cadastro da maquininha (Configurações)
-Passou a ter três campos, lado a lado:
+Como funciona: o sistema mede a largura da tela quando a página carrega. Abaixo
+de 1024px (celular e tablet), ele usa o código de sempre, sem nenhuma alteração.
+Acima disso, usa o layout novo. Não é uma adaptação do celular — são dois
+layouts independentes.
 
-    NOME DA MAQUININHA
-    [ InfinitePay                    ]
+---
 
-    CRÉDITO %    DÉBITO %    PIX %
-    [  3,50  ]   [  1,50  ]  [ 0,80 ]
+## O que tem de novo no computador
 
-Se a maquininha não recebe Pix, deixe 0.
+### Barra de navegação no topo
+Venda · Produtos · Caixa · Histórico · Relatórios · Configurações, sempre
+visíveis. A seção atual fica destacada em ciano. À direita, o status do caixa
+com um ponto verde.
 
-### Na hora da venda
-Ao escolher **Pix**, aparecem botões pra dizer onde o dinheiro vai cair:
+Por enquanto ela aparece só na tela de Venda — as outras telas entram no
+próximo pacote.
 
-    ONDE VAI RECEBER
-    [ Minha chave ]  [ InfinitePay ]  [ Cielo ]
+### Carrinho fixo à direita
+Saiu a gaveta que subia do rodapé. Agora o carrinho é uma coluna fixa ao lado,
+sempre visível, acompanhando a rolagem. Dá pra ver o que já foi escaneado sem
+perder os produtos de vista.
 
-"Minha chave" vem primeiro por ser o mais comum. Se nenhuma maquininha estiver
-cadastrada, essa pergunta nem aparece — vai direto pra tela de confirmação,
-como era antes.
+### Produtos em grade larga
+Em vez de 2 por linha, o computador encaixa quantos couberem na largura da tela
+(normalmente 4 a 6). Cada card mostra também quantas unidades tem em estoque, em
+amarelo quando está baixo. Clicar no card adiciona ao carrinho.
 
-O texto da tela muda conforme a escolha: "Mostre sua chave Pix pro cliente" ou
-"Gere a cobrança Pix na maquininha".
+### Pagamento sem janela flutuante
+As formas de pagamento e a confirmação acontecem no próprio painel da direita.
+O troco aparece numa faixa verde destacada, em letra grande.
 
-### No lucro
-Cada Pix desconta a taxa certa: a da maquininha escolhida, ou a taxa geral de
-Pix (em Configurações) quando cai na sua chave.
+### Atalhos de teclado
+- **Enter** — finaliza a venda (quando tem item no carrinho)
+- **Esc** — limpa o carrinho, ou volta um passo se estiver no pagamento
+
+Os atalhos não disparam enquanto você digita num campo, e não conflitam com o
+leitor de código de barras.
 
 ---
 
 ## Roteiro de teste
 
-1. **Configurações** → edita uma maquininha e coloca uma taxa de Pix (ex: 1%)
-2. **Venda** → finaliza no Pix e confere se aparecem os botões de destino
-3. Escolhe "Minha chave", confirma, e vê o lucro nos relatórios
-4. Faz outra venda igual, mas escolhendo a maquininha
-5. Compara: a segunda deve ter descontado 1% a mais
+1. Abre o site **no computador**, em tela cheia
+2. Confere a barra de navegação no topo e o carrinho à direita
+3. Escaneia ou clica em alguns produtos — devem aparecer no painel da direita
+4. Aperta **Enter** — deve abrir o pagamento no mesmo painel
+5. Escolhe Dinheiro, digita um valor maior — o troco aparece em verde
+6. Confirma e vê se a venda fecha normalmente
+7. Aperta **Esc** com itens no carrinho — deve limpar
+8. **Abre o site no celular** e confirma que está exatamente como antes
 
 ---
 
-## Ainda pendente
+## Próximo passo
 
-- **Conciliação financeira**: comparar vendas com o que a maquininha repassou
-- **Nota fiscal** e **multiempresa**: só se/quando precisar
+As outras telas (Produtos, Caixa, Histórico, Relatórios, Configurações) ainda
+usam o layout estreito no computador. Se você gostar do resultado da Venda, faço
+todas de uma vez no próximo pacote.
