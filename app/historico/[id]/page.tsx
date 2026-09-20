@@ -4,12 +4,15 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { buscarVenda, cancelarVenda, VendaDetalhe, FORMA_PAGAMENTO_LABEL } from '@/lib/supabase/historico'
+import { useIsDesktop } from '@/lib/useIsDesktop'
+import NavDesktop from '../../NavDesktop'
 
 function reais(v: number) {
   return `R$ ${v.toFixed(2).replace('.', ',')}`
 }
 
 export default function DetalheVendaPage() {
+  const isDesktop = useIsDesktop()
   const params = useParams()
   const id = params.id as string
 
@@ -57,8 +60,10 @@ export default function DetalheVendaPage() {
   const aguardandoPagamento = venda.status === 'aguardando_pagamento'
 
   return (
-    <div className="container" style={{ maxWidth: 420 }}>
-      <Link href="/historico" className="back-link">← Voltar</Link>
+    <>
+    {isDesktop && <NavDesktop />}
+    <div className="container col-estreita" style={{ maxWidth: 420 }}>
+      <Link href="/historico" className="back-link desktop-oculto">← Voltar</Link>
 
       <h1 style={{ fontSize: 18, fontWeight: 500 }}>
         Venda de {data.toLocaleDateString('pt-BR')} às {data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
@@ -147,5 +152,6 @@ export default function DetalheVendaPage() {
         </p>
       )}
     </div>
+    </>
   )
 }

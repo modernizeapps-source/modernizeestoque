@@ -1,71 +1,58 @@
-# Estoque Mercadinho — Pacote 6: tela de venda no computador
+# Estoque Mercadinho — Pacote 7: todas as telas no computador
 
 ## Nada pra configurar
-Nem banco de dados dessa vez. Só subir no GitHub e rodar:
+Sem mudança de banco. Só subir no GitHub e rodar:
 **Netlify → Deploys → Trigger deploy → Deploy project without cache**
 
 ---
 
-## O celular não mudou
+## O celular continua intacto
 
-Antes de qualquer coisa: **o layout do celular está intacto.** Comparei o código
-antigo com o novo caractere por caractere e são idênticos.
+Comparei automaticamente o que o celular renderiza antes e depois, tela por
+tela: **idêntico em todas**. As regras de layout novo só ativam a partir de
+1024px de largura, que nenhum celular ou tablet alcança.
 
-Como funciona: o sistema mede a largura da tela quando a página carrega. Abaixo
-de 1024px (celular e tablet), ele usa o código de sempre, sem nenhuma alteração.
-Acima disso, usa o layout novo. Não é uma adaptação do celular — são dois
-layouts independentes.
+Na tela inicial tem uma diferença proposital: no computador o título vira
+"Resumo de hoje" e os botões de navegação somem (já estão na barra do topo).
+No celular, continua tudo igual.
 
 ---
 
-## O que tem de novo no computador
+## O que mudou no computador
 
-### Barra de navegação no topo
-Venda · Produtos · Caixa · Histórico · Relatórios · Configurações, sempre
-visíveis. A seção atual fica destacada em ciano. À direita, o status do caixa
-com um ponto verde.
+### Barra de navegação em todas as telas
+Venda · Produtos · Caixa · Histórico · Relatórios · Configurações, sempre no
+topo, com a seção atual destacada. O link "← Voltar" some no computador, já que
+a navegação está sempre à mão.
 
-Por enquanto ela aparece só na tela de Venda — as outras telas entram no
-próximo pacote.
+### Início
+Os quatro números do dia (total vendido, lucro, vendas, estoque baixo) ficam
+lado a lado numa linha só, em cards maiores.
 
-### Carrinho fixo à direita
-Saiu a gaveta que subia do rodapé. Agora o carrinho é uma coluna fixa ao lado,
-sempre visível, acompanhando a rolagem. Dá pra ver o que já foi escaneado sem
-perder os produtos de vista.
+### Produtos e Histórico
+As listas viram grade de vários cards por linha, em vez de uma coluna estreita.
+Passar o mouse destaca o card.
 
-### Produtos em grade larga
-Em vez de 2 por linha, o computador encaixa quantos couberem na largura da tela
-(normalmente 4 a 6). Cada card mostra também quantas unidades tem em estoque, em
-amarelo quando está baixo. Clicar no card adiciona ao carrinho.
+### Caixa, Configurações, cadastro de produto
+Continuam em coluna centralizada — formulário largo demais fica ruim de ler —
+mas com mais respiro e títulos maiores.
 
-### Pagamento sem janela flutuante
-As formas de pagamento e a confirmação acontecem no próprio painel da direita.
-O troco aparece numa faixa verde destacada, em letra grande.
+### Relatórios
+Os quatro números da visão geral ficam lado a lado. O resto das seções ganhou
+largura.
 
-### Atalhos de teclado
-- **Enter** — finaliza a venda (quando tem item no carrinho)
-- **Esc** — limpa o carrinho, ou volta um passo se estiver no pagamento
-
-Os atalhos não disparam enquanto você digita num campo, e não conflitam com o
-leitor de código de barras.
+### Detalhes gerais
+Botões e pills reagem ao passar o mouse. Títulos maiores. Tudo com mais espaço.
 
 ---
 
 ## Roteiro de teste
 
-1. Abre o site **no computador**, em tela cheia
-2. Confere a barra de navegação no topo e o carrinho à direita
-3. Escaneia ou clica em alguns produtos — devem aparecer no painel da direita
-4. Aperta **Enter** — deve abrir o pagamento no mesmo painel
-5. Escolhe Dinheiro, digita um valor maior — o troco aparece em verde
-6. Confirma e vê se a venda fecha normalmente
-7. Aperta **Esc** com itens no carrinho — deve limpar
-8. **Abre o site no celular** e confirma que está exatamente como antes
+1. Abre **no computador** e navega por todas as telas pela barra do topo
+2. Confere se a seção atual fica destacada em ciano
+3. Em **Produtos**, vê se a lista virou grade
+4. Em **Início**, vê se os quatro números estão numa linha
+5. Passa o mouse nos cards e botões — devem reagir
+6. **Abre no celular** e confere que está exatamente como antes
 
----
-
-## Próximo passo
-
-As outras telas (Produtos, Caixa, Histórico, Relatórios, Configurações) ainda
-usam o layout estreito no computador. Se você gostar do resultado da Venda, faço
-todas de uma vez no próximo pacote.
+Se alguma tela específica ficar estranha, me diz qual que eu ajusto ela sozinha.

@@ -7,6 +7,8 @@ import { Categoria, listarCategorias } from '@/lib/supabase/categorias'
 import { criarProduto } from '@/lib/supabase/produtos'
 import { useLeitorCodigoBarras } from '@/lib/useLeitorCodigoBarras'
 import CategoriaPicker from '../CategoriaPicker'
+import { useIsDesktop } from '@/lib/useIsDesktop'
+import NavDesktop from '../../NavDesktop'
 
 // useSearchParams precisa estar dentro de um Suspense (exigência do Next.js)
 export default function NovoProdutoPage() {
@@ -18,6 +20,7 @@ export default function NovoProdutoPage() {
 }
 
 function NovoProdutoConteudo() {
+  const isDesktop = useIsDesktop()
   const router = useRouter()
   const searchParams = useSearchParams()
   const codigoBarrasInicial = searchParams.get('codigo_barras') ?? ''
@@ -97,9 +100,11 @@ function NovoProdutoConteudo() {
   }
 
   return (
-    <div className="container" style={{ maxWidth: 420 }}>
-      <Link href="/produtos" className="back-link">← Voltar</Link>
-      <h1 style={{ fontSize: 20, fontWeight: 500, marginBottom: 20 }}>Novo produto</h1>
+    <>
+    {isDesktop && <NavDesktop />}
+    <div className="container col-estreita" style={{ maxWidth: 420 }}>
+      <Link href="/produtos" className="back-link desktop-oculto">← Voltar</Link>
+      <h1 className="titulo-pagina" style={{ fontSize: 20, fontWeight: 500, marginBottom: 20 }}>Novo produto</h1>
 
       <form onSubmit={handleSalvar} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div>
@@ -159,5 +164,6 @@ function NovoProdutoConteudo() {
         </button>
       </form>
     </div>
+    </>
   )
 }

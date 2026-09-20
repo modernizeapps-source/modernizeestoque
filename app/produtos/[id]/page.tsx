@@ -10,12 +10,15 @@ import {
 } from '@/lib/supabase/produtos'
 import { useLeitorCodigoBarras } from '@/lib/useLeitorCodigoBarras'
 import CategoriaPicker from '../CategoriaPicker'
+import { useIsDesktop } from '@/lib/useIsDesktop'
+import NavDesktop from '../../NavDesktop'
 
 function reais(v: number) {
   return `R$ ${v.toFixed(2).replace('.', ',')}`
 }
 
 export default function EditarProdutoPage() {
+  const isDesktop = useIsDesktop()
   const params = useParams()
   const router = useRouter()
   const id = params.id as string
@@ -179,8 +182,10 @@ export default function EditarProdutoPage() {
     : (produto.estoque_atual * produto.preco_custo + qtdPrevia * custoPrevia) / estoqueDepois
 
   return (
-    <div className="container" style={{ maxWidth: 460, paddingBottom: 60 }}>
-      <Link href="/produtos" className="back-link">← Voltar</Link>
+    <>
+    {isDesktop && <NavDesktop />}
+    <div className="container col-media" style={{ maxWidth: 460, paddingBottom: 60 }}>
+      <Link href="/produtos" className="back-link desktop-oculto">← Voltar</Link>
       <h1 style={{ fontSize: 20, fontWeight: 500, marginBottom: 16 }}>{produto.nome}</h1>
 
       {sucesso && <div className="success-box" style={{ marginBottom: 14 }}>✓ {sucesso}</div>}
@@ -328,5 +333,6 @@ export default function EditarProdutoPage() {
         </div>
       )}
     </div>
+    </>
   )
 }

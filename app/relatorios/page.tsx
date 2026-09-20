@@ -9,6 +9,8 @@ import EvolucaoDiaSemana from './EvolucaoDiaSemana'
 import FechamentoMensal from './FechamentoMensal'
 import ConfigPeriodosDia, { lerLimitesPeriodo } from './ConfigPeriodosDia'
 import LucroPorCategoria from './LucroPorCategoria'
+import { useIsDesktop } from '@/lib/useIsDesktop'
+import NavDesktop from '../NavDesktop'
 
 const FORMA_PAGAMENTO_LABEL: Record<string, string> = {
   dinheiro: 'Dinheiro',
@@ -31,6 +33,7 @@ function formatarDataCurta(d: Date) {
 }
 
 export default function RelatoriosPage() {
+  const isDesktop = useIsDesktop()
   const [periodoLabel, setPeriodoLabel] = useState('Este mês')
   const [range, setRange] = useState(() => inicioFimPeriodo('mes'))
   const [seletorAberto, setSeletorAberto] = useState(false)
@@ -72,9 +75,11 @@ export default function RelatoriosPage() {
   const maiorDiaSemana = totaisPorDia.length > 0 ? Math.max(...totaisPorDia, 1) : 1
 
   return (
+    <>
+    {isDesktop && <NavDesktop />}
     <div className="container">
-      <Link href="/" className="back-link">← Voltar</Link>
-      <h1 style={{ fontSize: 20, fontWeight: 500, marginBottom: 16 }}>Relatórios</h1>
+      <Link href="/" className="back-link desktop-oculto">← Voltar</Link>
+      <h1 className="titulo-pagina" style={{ fontSize: 20, fontWeight: 500, marginBottom: 16 }}>Relatórios</h1>
 
       <button onClick={() => setSeletorAberto(true)} className="btn-primary" style={{ marginBottom: 20 }}>
         📅 {periodoLabel} ▾
@@ -88,7 +93,7 @@ export default function RelatoriosPage() {
       {relatorio && !carregando && (
         <>
           <p className="section-title">Visão geral</p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 24 }}>
+          <div className="metricas-desktop" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 24 }}>
             <div className="card">
               <div className="mono" style={{ fontSize: 10, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Total vendido</div>
               <div className="mono" style={{ fontSize: 18, fontWeight: 500, marginTop: 6, color: 'var(--cyan)' }}>{reais(relatorio.totalVendido)}</div>
@@ -169,5 +174,6 @@ export default function RelatoriosPage() {
         </>
       )}
     </div>
+    </>
   )
 }

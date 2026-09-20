@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { Produto, listarProdutos, margemLucro } from '@/lib/supabase/produtos'
+import { useIsDesktop } from '@/lib/useIsDesktop'
+import NavDesktop from '../NavDesktop'
 import { Categoria, listarCategorias } from '@/lib/supabase/categorias'
 
 function reais(v: number) {
@@ -10,6 +12,7 @@ function reais(v: number) {
 }
 
 export default function ProdutosPage() {
+  const isDesktop = useIsDesktop()
   const [produtos, setProdutos] = useState<Produto[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [categoriaId, setCategoriaId] = useState<string | null>(null)
@@ -33,10 +36,12 @@ export default function ProdutosPage() {
   }, [produtos, categoriaId, busca])
 
   return (
+    <>
+    {isDesktop && <NavDesktop />}
     <div className="container">
-      <Link href="/" className="back-link">← Voltar</Link>
+      <Link href="/" className="back-link desktop-oculto">← Voltar</Link>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <h1 style={{ fontSize: 20, fontWeight: 500 }}>Produtos</h1>
+        <h1 className="titulo-pagina" style={{ fontSize: 20, fontWeight: 500 }}>Produtos</h1>
         <Link href="/produtos/novo" className="btn-primary" style={{ padding: '8px 14px', fontSize: 13 }}>+ Novo produto</Link>
       </div>
 
@@ -68,14 +73,14 @@ export default function ProdutosPage() {
         <p style={{ color: 'var(--text-dim)', fontSize: 14 }}>Nenhum produto encontrado com esse filtro.</p>
       )}
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div className="grade-desktop-cards" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {produtosFiltrados.map((p) => {
           const margem = margemLucro(p.preco_venda, p.preco_custo)
           return (
             <Link
               key={p.id}
               href={`/produtos/${p.id}`}
-              className="card"
+              className="card card-clicavel"
               style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', textDecoration: 'none', color: 'var(--text)' }}
             >
               <div>
@@ -97,5 +102,6 @@ export default function ProdutosPage() {
         })}
       </div>
     </div>
+    </>
   )
 }

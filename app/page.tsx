@@ -6,12 +6,15 @@ import { createClient } from '@/lib/supabase/client'
 import { buscarResumoHoje, ResumoHoje } from '@/lib/supabase/dashboard'
 import { buscarCaixaAberto } from '@/lib/supabase/caixa'
 import { FORMA_PAGAMENTO_LABEL } from '@/lib/supabase/historico'
+import { useIsDesktop } from '@/lib/useIsDesktop'
+import NavDesktop from './NavDesktop'
 
 function reais(v: number) {
   return `R$ ${v.toFixed(2).replace('.', ',')}`
 }
 
 export default function HomePage() {
+  const isDesktop = useIsDesktop()
   const supabase = createClient()
   const [carregando, setCarregando] = useState(true)
   const [email, setEmail] = useState<string | null>(null)
@@ -57,9 +60,13 @@ export default function HomePage() {
   }
 
   return (
+    <>
+    {isDesktop && <NavDesktop statusCaixa={caixaAberto ? 'caixa aberto' : undefined} />}
     <div className="container">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <h1 style={{ fontSize: 20, fontWeight: 500 }}>Estoque Mercadinho</h1>
+        <h1 className="titulo-pagina" style={{ fontSize: 20, fontWeight: 500 }}>
+          {isDesktop ? 'Resumo de hoje' : 'Estoque Mercadinho'}
+        </h1>
         <button onClick={handleSair} className="btn-secondary" style={{ padding: '6px 12px', fontSize: 13 }}>Sair</button>
       </div>
 
@@ -68,7 +75,7 @@ export default function HomePage() {
       {resumo && (
         <>
           <p className="subtitle" style={{ marginBottom: 8 }}>Hoje</p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+          <div className="metricas-desktop" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
             <div className="card card-accent">
               <div className="mono" style={{ fontSize: 10, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Total vendido</div>
               <div className="mono" style={{ fontSize: 20, fontWeight: 500, marginTop: 6, color: 'var(--cyan)' }}>{reais(resumo.totalVendido)}</div>
@@ -79,7 +86,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
+          <div className="metricas-desktop" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
             <div className="card">
               <div className="mono" style={{ fontSize: 10, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Vendas hoje</div>
               <div style={{ fontSize: 18, fontWeight: 600, marginTop: 6 }}>{resumo.numVendas}</div>
@@ -120,14 +127,19 @@ export default function HomePage() {
         </Link>
       )}
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-        <Link href="/venda" className="btn-primary">Nova venda</Link>
-        <Link href="/caixa" className="btn-secondary">Caixa {caixaAberto ? '· aberto' : ''}</Link>
-        <Link href="/historico" className="btn-secondary">Histórico</Link>
-        <Link href="/produtos" className="btn-secondary">Produtos</Link>
-        <Link href="/relatorios" className="btn-secondary">Relatórios</Link>
-        <Link href="/configuracoes" className="btn-secondary">Configurações</Link>
-      </div>
+      {isDesktop ? (
+        <Link href="/venda" className="btn-primary" style={{ padding: '14px 26px', fontSize: 15 }}>Nova venda</Link>
+      ) : (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+          <Link href="/venda" className="btn-primary">Nova venda</Link>
+          <Link href="/caixa" className="btn-secondary">Caixa {caixaAberto ? '· aberto' : ''}</Link>
+          <Link href="/historico" className="btn-secondary">Histórico</Link>
+          <Link href="/produtos" className="btn-secondary">Produtos</Link>
+          <Link href="/relatorios" className="btn-secondary">Relatórios</Link>
+          <Link href="/configuracoes" className="btn-secondary">Configurações</Link>
+        </div>
+      )}
     </div>
+    </>
   )
 }

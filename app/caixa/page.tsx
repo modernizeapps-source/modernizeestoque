@@ -13,12 +13,15 @@ import {
   CaixaMovimento,
 } from '@/lib/supabase/caixa'
 import { FORMA_PAGAMENTO_LABEL } from '@/lib/supabase/historico'
+import { useIsDesktop } from '@/lib/useIsDesktop'
+import NavDesktop from '../NavDesktop'
 
 function reais(v: number) {
   return `R$ ${v.toFixed(2).replace('.', ',')}`
 }
 
 export default function CaixaPage() {
+  const isDesktop = useIsDesktop()
   const [carregando, setCarregando] = useState(true)
   const [caixa, setCaixa] = useState<CaixaSessao | null>(null)
   const [movimentos, setMovimentos] = useState<CaixaMovimento[]>([])
@@ -126,10 +129,12 @@ export default function CaixaPage() {
   if (carregando) return <p style={{ position: 'relative', zIndex: 1, textAlign: 'center', marginTop: 60, color: 'var(--text-dim)' }}>Carregando...</p>
 
   return (
-    <div className="container" style={{ maxWidth: 460, paddingBottom: 80 }}>
-      <Link href="/" className="back-link">← Voltar</Link>
+    <>
+    {isDesktop && <NavDesktop />}
+    <div className="container col-media" style={{ maxWidth: 460, paddingBottom: 80 }}>
+      <Link href="/" className="back-link desktop-oculto">← Voltar</Link>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <h1 style={{ fontSize: 20, fontWeight: 500 }}>Caixa</h1>
+        <h1 className="titulo-pagina" style={{ fontSize: 20, fontWeight: 500 }}>Caixa</h1>
         <Link href="/caixa/historico" className="btn-secondary" style={{ padding: '8px 14px', fontSize: 13 }}>Histórico</Link>
       </div>
 
@@ -248,5 +253,6 @@ export default function CaixaPage() {
         </div>
       )}
     </div>
+    </>
   )
 }

@@ -6,8 +6,11 @@ import {
   buscarTaxas, salvarTaxas, TaxasPagamento, TAXAS_PADRAO, TAXA_LABEL,
   Maquininha, listarMaquininhas, criarMaquininha, atualizarMaquininha, removerMaquininha,
 } from '@/lib/supabase/configuracoes'
+import { useIsDesktop } from '@/lib/useIsDesktop'
+import NavDesktop from '../NavDesktop'
 
 export default function ConfiguracoesPage() {
+  const isDesktop = useIsDesktop()
   const [taxas, setTaxas] = useState<TaxasPagamento>(TAXAS_PADRAO)
   const [maquininhas, setMaquininhas] = useState<Maquininha[]>([])
   const [carregando, setCarregando] = useState(true)
@@ -124,9 +127,11 @@ export default function ConfiguracoesPage() {
   }
 
   return (
-    <div className="container" style={{ maxWidth: 460, paddingBottom: 60 }}>
-      <Link href="/" className="back-link">← Voltar</Link>
-      <h1 style={{ fontSize: 20, fontWeight: 500, marginBottom: 6 }}>Configurações</h1>
+    <>
+    {isDesktop && <NavDesktop />}
+    <div className="container col-media" style={{ maxWidth: 460, paddingBottom: 60 }}>
+      <Link href="/" className="back-link desktop-oculto">← Voltar</Link>
+      <h1 className="titulo-pagina" style={{ fontSize: 20, fontWeight: 500, marginBottom: 6 }}>Configurações</h1>
 
       {erro && <p className="error-text" style={{ marginTop: 12 }}>{erro}</p>}
       {sucesso && <div className="success-box" style={{ marginTop: 12 }}>✓ {sucesso}</div>}
@@ -252,5 +257,6 @@ export default function ConfiguracoesPage() {
         </button>
       </form>
     </div>
+    </>
   )
 }

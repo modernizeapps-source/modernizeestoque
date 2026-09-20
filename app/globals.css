@@ -169,3 +169,93 @@ button { font-family: inherit; }
   text-transform: uppercase;
   margin-bottom: 7px;
 }
+
+/* ============================================================
+   LAYOUT DE COMPUTADOR
+   Tudo aqui dentro só vale em telas com 1024px ou mais.
+   Celular e tablet nunca chegam nessa largura, então o layout
+   deles continua exatamente como sempre foi.
+   ============================================================ */
+@media (min-width: 1024px) {
+
+  /* Container mais largo, com respiro */
+  .container {
+    max-width: 1180px !important;
+    padding: 4px 32px 56px !important;
+  }
+
+  /* Telas que pedem coluna estreita centralizada (formulários) */
+  .container.col-estreita {
+    max-width: 620px !important;
+  }
+
+  /* Telas de leitura confortável */
+  .container.col-media {
+    max-width: 880px !important;
+  }
+
+  /* O link "voltar" some: a navegação fica na barra do topo */
+  .desktop-oculto { display: none !important; }
+
+  /* Títulos com mais presença */
+  .titulo-pagina {
+    font-size: 27px !important;
+    letter-spacing: -0.02em;
+    margin-bottom: 22px !important;
+  }
+
+  /* Grades que viram multi-coluna no computador */
+  .grade-desktop-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .grade-desktop-auto {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+    gap: 12px !important;
+  }
+  .grade-desktop-cards {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)) !important;
+    gap: 12px !important;
+  }
+
+  /* Cartões de número (início, caixa) mais generosos */
+  .metricas-desktop {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 14px !important;
+  }
+  .metricas-desktop .card { padding: 20px !important; }
+
+  /* Duas colunas: conteúdo principal + painel lateral */
+  .split-desktop {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 360px !important;
+    gap: 24px !important;
+    align-items: start !important;
+  }
+  .split-desktop-lateral { position: sticky; top: 20px; }
+
+  /* Relatórios: as seções ficam lado a lado */
+  .relatorio-desktop {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 22px 26px !important;
+    align-items: start !important;
+  }
+  .relatorio-largura-total { grid-column: 1 / -1 !important; }
+
+  /* Listas longas ganham altura de rolagem própria */
+  .lista-rolavel-desktop {
+    max-height: 520px;
+    overflow-y: auto;
+    padding-right: 6px;
+  }
+
+  /* Efeito de passar o mouse — só faz sentido no computador */
+  .card-clicavel { transition: border-color .15s, background .15s; }
+  .card-clicavel:hover {
+    border-color: var(--line-strong) !important;
+    background: rgba(79, 216, 255, 0.04) !important;
+  }
+  .btn-primary, .btn-secondary, .btn-danger, .pill { transition: filter .15s, background .15s; }
+  .btn-primary:hover, .btn-secondary:hover, .btn-danger:hover { filter: brightness(1.22); }
+  .pill:not(.pill-active):hover { background: rgba(79, 216, 255, 0.07); }
+}

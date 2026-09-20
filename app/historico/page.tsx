@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { listarVendas, VendaResumo, FORMA_PAGAMENTO_LABEL } from '@/lib/supabase/historico'
 import CalendarioPeriodo from '../relatorios/CalendarioPeriodo'
+import { useIsDesktop } from '@/lib/useIsDesktop'
+import NavDesktop from '../NavDesktop'
 
 function reais(v: number) {
   return `R$ ${v.toFixed(2).replace('.', ',')}`
@@ -14,6 +16,7 @@ function formatarDataCurta(d: Date) {
 }
 
 export default function HistoricoPage() {
+  const isDesktop = useIsDesktop()
   const [vendas, setVendas] = useState<VendaResumo[]>([])
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState<string | null>(null)
@@ -53,8 +56,10 @@ export default function HistoricoPage() {
   }
 
   return (
+    <>
+    {isDesktop && <NavDesktop />}
     <div className="container">
-      <Link href="/" className="back-link">← Voltar</Link>
+      <Link href="/" className="back-link desktop-oculto">← Voltar</Link>
       <h1 style={{ fontSize: 20, fontWeight: 500, marginBottom: 16 }}>Histórico de vendas</h1>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
@@ -80,7 +85,7 @@ export default function HistoricoPage() {
         </p>
       )}
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div className="grade-desktop-cards" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {vendas.map((v) => {
           const data = new Date(v.data_hora)
           const hora = data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
@@ -92,7 +97,7 @@ export default function HistoricoPage() {
             <Link
               key={v.id}
               href={`/historico/${v.id}`}
-              className="card"
+              className="card card-clicavel"
               style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', textDecoration: 'none', color: 'var(--text)', opacity: cancelada ? 0.5 : 1 }}
             >
               <div>
@@ -120,5 +125,6 @@ export default function HistoricoPage() {
         })}
       </div>
     </div>
+    </>
   )
 }
