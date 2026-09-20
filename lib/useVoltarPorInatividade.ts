@@ -24,14 +24,16 @@ export function useVoltarPorInatividade() {
   const minutosRef = useRef<number>(0)
   const jaVoltouRef = useRef(false)
 
-  // Busca o tempo configurado uma vez por carregamento da página
+  // Lê o tempo configurado. Relê a cada troca de tela, pra que uma alteração
+  // feita em Configurações passe a valer na hora, sem precisar recarregar a
+  // página inteira.
   useEffect(() => {
     let vivo = true
     buscarMinutosInatividade()
       .then((m) => { if (vivo) minutosRef.current = m })
       .catch(() => { minutosRef.current = 0 })
     return () => { vivo = false }
-  }, [])
+  }, [pathname])
 
   useEffect(() => {
     // Na própria tela inicial (e no login) não há pra onde voltar

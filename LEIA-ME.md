@@ -21,6 +21,15 @@ alguém no meio de uma venda.
 Vale em todas as telas (Venda, Produtos, Caixa, Histórico, Relatórios,
 Configurações).
 
+### Navegar entre telas reinicia a contagem
+Se ele estiver em Relatórios e clicar em Venda, o clique conta como atividade e
+a contagem começa de novo dali. Ficando parado na tela de Venda, o tempo corre
+normalmente até voltar pro início.
+
+### Mudar o tempo vale na hora
+Alterou de 5 pra 10 minutos em Configurações? Passa a valer na próxima tela que
+abrir, sem precisar recarregar a página.
+
 ### Conta mesmo com a aba em segundo plano
 Se ele trocar de aba, minimizar a janela ou sair pra fumar um cigarro, **o tempo
 continua correndo**. Ao voltar pro sistema depois do prazo, já encontra a tela
