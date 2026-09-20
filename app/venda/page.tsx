@@ -61,10 +61,12 @@ export default function VendaPage() {
   // Vazio = o valor restante inteiro.
   const [valorParcial, setValorParcial] = useState('')
 
-  // pagamento no cartão
+  // pagamento no cartão e no Pix
   const [maquininhas, setMaquininhas] = useState<Maquininha[]>([])
   const [maquininhaId, setMaquininhaId] = useState<string | null>(null)
   const [tipoCartao, setTipoCartao] = useState<'credito' | 'debito'>('credito')
+  // onde o Pix foi recebido: null = chave do próprio lojista
+  const [pixMaquininhaId, setPixMaquininhaId] = useState<string | null>(null)
 
   async function carregarDados() {
     setCarregando(true)
@@ -187,6 +189,7 @@ export default function VendaPage() {
       setValorRecebido('')
       setEtapa('pagamento_dinheiro')
     } else if (forma === 'pix_manual') {
+      setPixMaquininhaId(null)
       setEtapa('pagamento_pix_manual')
     } else if (forma === 'cartao') {
       setTipoCartao('credito')
@@ -245,7 +248,9 @@ export default function VendaPage() {
     setProcessando(true)
     setErroCheckout(null)
     try {
-      const pagamentoId = await adicionarPagamentoPendente({ venda_id: vendaId, forma: 'pix_manual', valor: valorACobrar })
+      const pagamentoId = await adicionarPagamentoPendente({
+        venda_id: vendaId, forma: 'pix_manual', valor: valorACobrar, maquininha_id: pixMaquininhaId,
+      })
       await confirmarPagamentoPendente(pagamentoId)
       await aposPagamentoConfirmado(valorACobrar)
     } catch (e: any) {
@@ -456,10 +461,38 @@ export default function VendaPage() {
 
             {etapa === 'pagamento_pix_manual' && (
               <>
-                <h2 style={{ fontSize: 16, fontWeight: 500, marginBottom: 14 }}>Pix (sua chave)</h2>
+                <h2 style={{ fontSize: 16, fontWeight: 500, marginBottom: 14 }}>Pix</h2>
                 <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 4 }}>Valor a receber</p>
                 <p className="mono" style={{ fontSize: 22, color: 'var(--cyan)', marginBottom: 16 }}>{reais(valorACobrar)}</p>
-                <p style={{ fontSize: 13, marginBottom: 16 }}>Mostre sua chave Pix (ou o QR do seu app) pro cliente. Quando o dinheiro cair na sua conta, confirme abaixo.</p>
+
+                {maquininhas.length > 0 && (
+                  <>
+                    <label className="label">Onde vai receber</label>
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+                      <button
+                        onClick={() => setPixMaquininhaId(null)}
+                        className={`pill ${pixMaquininhaId === null ? 'pill-active' : ''}`}
+                      >
+                        Minha chave
+                      </button>
+                      {maquininhas.map((m) => (
+                        <button
+                          key={m.id}
+                          onClick={() => setPixMaquininhaId(m.id)}
+                          className={`pill ${pixMaquininhaId === m.id ? 'pill-active' : ''}`}
+                        >
+                          {m.nome}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                <p style={{ fontSize: 13, marginBottom: 16 }}>
+                  {pixMaquininhaId === null
+                    ? 'Mostre sua chave Pix (ou o QR do seu app) pro cliente. Quando o dinheiro cair na sua conta, confirme abaixo.'
+                    : 'Gere a cobrança Pix na maquininha. Quando o cliente pagar, confirme abaixo.'}
+                </p>
 
                 {erroCheckout && <p className="error-text" style={{ marginBottom: 10 }}>{erroCheckout}</p>}
 

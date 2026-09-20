@@ -20,12 +20,14 @@ export default function ConfiguracoesPage() {
   const [novoNome, setNovoNome] = useState('')
   const [novoCredito, setNovoCredito] = useState('')
   const [novoDebito, setNovoDebito] = useState('')
+  const [novoPix, setNovoPix] = useState('')
 
   // edição de maquininha
   const [editandoId, setEditandoId] = useState<string | null>(null)
   const [editNome, setEditNome] = useState('')
   const [editCredito, setEditCredito] = useState('')
   const [editDebito, setEditDebito] = useState('')
+  const [editPix, setEditPix] = useState('')
 
   async function carregar() {
     try {
@@ -70,8 +72,8 @@ export default function ConfiguracoesPage() {
     setErro(null)
     if (!novoNome.trim()) return setErro('Dê um nome pra maquininha.')
     try {
-      await criarMaquininha(novoNome.trim(), num(novoCredito), num(novoDebito))
-      setNovoNome(''); setNovoCredito(''); setNovoDebito(''); setMostrarNova(false)
+      await criarMaquininha(novoNome.trim(), num(novoCredito), num(novoDebito), num(novoPix))
+      setNovoNome(''); setNovoCredito(''); setNovoDebito(''); setNovoPix(''); setMostrarNova(false)
       await carregar()
       avisar('Maquininha adicionada!')
     } catch (e: any) {
@@ -84,6 +86,7 @@ export default function ConfiguracoesPage() {
     setEditNome(m.nome)
     setEditCredito(String(m.taxa_credito))
     setEditDebito(String(m.taxa_debito))
+    setEditPix(String(m.taxa_pix))
   }
 
   async function handleSalvarEdicao(e: React.FormEvent) {
@@ -95,6 +98,7 @@ export default function ConfiguracoesPage() {
         nome: editNome.trim(),
         taxa_credito: num(editCredito),
         taxa_debito: num(editDebito),
+        taxa_pix: num(editPix),
       })
       setEditandoId(null)
       await carregar()
@@ -130,8 +134,9 @@ export default function ConfiguracoesPage() {
       {/* Maquininhas */}
       <p className="section-title" style={{ marginTop: 22 }}>Maquininhas de cartão</p>
       <p style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 14, lineHeight: 1.5 }}>
-        Cadastre as maquininhas que você usa, cada uma com a taxa que ela cobra. Na hora da venda
-        você escolhe qual foi usada tocando num botão, e o lucro já desconta a taxa certa.
+        Cadastre as maquininhas que você usa, cada uma com as taxas que ela cobra. Na hora da venda
+        você escolhe onde foi passado tocando num botão, e o lucro já desconta a taxa certa.
+        Se a maquininha não recebe Pix, deixe esse campo em 0.
       </p>
 
       {maquininhas.length === 0 && !mostrarNova && (
@@ -146,14 +151,18 @@ export default function ConfiguracoesPage() {
             <form onSubmit={handleSalvarEdicao}>
               <label className="label">Nome</label>
               <input value={editNome} onChange={(e) => setEditNome(e.target.value)} className="input" style={{ marginBottom: 10 }} />
-              <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
-                <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <label className="label">Crédito %</label>
-                  <input type="number" step="0.01" value={editCredito} onChange={(e) => setEditCredito(e.target.value)} className="input" />
+                  <input type="number" step="0.01" value={editCredito} onChange={(e) => setEditCredito(e.target.value)} className="input" style={{ padding: '10px 8px' }} />
                 </div>
-                <div style={{ flex: 1 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <label className="label">Débito %</label>
-                  <input type="number" step="0.01" value={editDebito} onChange={(e) => setEditDebito(e.target.value)} className="input" />
+                  <input type="number" step="0.01" value={editDebito} onChange={(e) => setEditDebito(e.target.value)} className="input" style={{ padding: '10px 8px' }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <label className="label">Pix %</label>
+                  <input type="number" step="0.01" value={editPix} onChange={(e) => setEditPix(e.target.value)} className="input" style={{ padding: '10px 8px' }} />
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
@@ -166,7 +175,7 @@ export default function ConfiguracoesPage() {
               <div>
                 <div style={{ fontSize: 14, fontWeight: 500 }}>{m.nome}</div>
                 <div className="mono" style={{ fontSize: 11.5, color: 'var(--text-dim)', marginTop: 3 }}>
-                  crédito {Number(m.taxa_credito).toFixed(2).replace('.', ',')}% · débito {Number(m.taxa_debito).toFixed(2).replace('.', ',')}%
+                  crédito {Number(m.taxa_credito).toFixed(2).replace('.', ',')}% · débito {Number(m.taxa_debito).toFixed(2).replace('.', ',')}% · pix {Number(m.taxa_pix).toFixed(2).replace('.', ',')}%
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 6 }}>
@@ -182,15 +191,19 @@ export default function ConfiguracoesPage() {
         <div className="card" style={{ marginBottom: 12 }}>
           <form onSubmit={handleCriarMaquininha}>
             <label className="label">Nome da maquininha</label>
-            <input value={novoNome} onChange={(e) => setNovoNome(e.target.value)} placeholder="Ex: InfinitePay, Cielo, Stone" className="input" style={{ marginBottom: 10 }} autoFocus />
-            <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
-              <div style={{ flex: 1 }}>
-                <label className="label">Taxa crédito %</label>
-                <input type="number" step="0.01" value={novoCredito} onChange={(e) => setNovoCredito(e.target.value)} placeholder="0" className="input" />
+            <input value={novoNome} onChange={(e) => setNovoNome(e.target.value)} placeholder="Ex: InfinitePay, Cielo, Stone" className="input" style={{ marginBottom: 12 }} autoFocus />
+            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <label className="label">Crédito %</label>
+                <input type="number" step="0.01" value={novoCredito} onChange={(e) => setNovoCredito(e.target.value)} placeholder="0" className="input" style={{ padding: '10px 8px' }} />
               </div>
-              <div style={{ flex: 1 }}>
-                <label className="label">Taxa débito %</label>
-                <input type="number" step="0.01" value={novoDebito} onChange={(e) => setNovoDebito(e.target.value)} placeholder="0" className="input" />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <label className="label">Débito %</label>
+                <input type="number" step="0.01" value={novoDebito} onChange={(e) => setNovoDebito(e.target.value)} placeholder="0" className="input" style={{ padding: '10px 8px' }} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <label className="label">Pix %</label>
+                <input type="number" step="0.01" value={novoPix} onChange={(e) => setNovoPix(e.target.value)} placeholder="0" className="input" style={{ padding: '10px 8px' }} />
               </div>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
@@ -206,9 +219,10 @@ export default function ConfiguracoesPage() {
       )}
 
       {/* Outras formas */}
-      <p className="section-title">Outras formas de pagamento</p>
+      <p className="section-title">Pix na sua chave e dinheiro</p>
       <p style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 14, lineHeight: 1.5 }}>
-        Se o seu banco cobra alguma taxa por Pix recebido, coloque aqui. Dinheiro normalmente é 0%.
+        Taxas do Pix recebido direto na sua chave (fora da maquininha) e do dinheiro.
+        Normalmente as duas são 0%.
       </p>
 
       <form onSubmit={handleSalvarTaxas}>

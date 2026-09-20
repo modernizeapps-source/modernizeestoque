@@ -22,6 +22,7 @@ export type Maquininha = {
   nome: string
   taxa_credito: number
   taxa_debito: number
+  taxa_pix: number
   ativa: boolean
   ordem: number
 }
@@ -69,18 +70,18 @@ export async function listarMaquininhas(somenteAtivas = false): Promise<Maquinin
   return (data as any) ?? []
 }
 
-export async function criarMaquininha(nome: string, taxaCredito: number, taxaDebito: number): Promise<Maquininha> {
+export async function criarMaquininha(nome: string, taxaCredito: number, taxaDebito: number, taxaPix: number): Promise<Maquininha> {
   const supabase = createClient()
   const { data, error } = await supabase
     .from('maquininhas')
-    .insert({ nome, taxa_credito: taxaCredito, taxa_debito: taxaDebito })
+    .insert({ nome, taxa_credito: taxaCredito, taxa_debito: taxaDebito, taxa_pix: taxaPix })
     .select('*')
     .single()
   if (error) throw error
   return data as any
 }
 
-export async function atualizarMaquininha(id: string, input: { nome: string; taxa_credito: number; taxa_debito: number }): Promise<void> {
+export async function atualizarMaquininha(id: string, input: { nome: string; taxa_credito: number; taxa_debito: number; taxa_pix: number }): Promise<void> {
   const supabase = createClient()
   const { error } = await supabase.from('maquininhas').update(input).eq('id', id)
   if (error) throw error
@@ -94,8 +95,10 @@ export async function removerMaquininha(id: string): Promise<void> {
   if (error) throw error
 }
 
-// Descobre a taxa de um pagamento. Cartão depende da maquininha usada e de ser
-// crédito ou débito; as outras formas vêm das configurações gerais.
+// Descobre a taxa de um pagamento.
+// - Cartão: taxa da maquininha usada, crédito ou débito
+// - Pix numa maquininha: taxa de Pix daquela maquininha
+// - Pix na chave do lojista e dinheiro: taxa geral das configurações
 export function taxaDoPagamento(
   taxas: TaxasPagamento,
   maquininhas: Maquininha[],
@@ -103,16 +106,24 @@ export function taxaDoPagamento(
   tipoCartao?: string | null,
   maquininhaId?: string | null
 ): number {
+  const maq = maquininhaId ? maquininhas.find((m) => m.id === maquininhaId) : null
+
   if (forma === 'cartao' || forma === 'cartao_maquininha' || forma === 'credito' || forma === 'debito') {
-    const maq = maquininhaId ? maquininhas.find((m) => m.id === maquininhaId) : null
     const ehDebito = tipoCartao === 'debito' || forma === 'debito'
-    if (maq) return ehDebito ? Number(maq.taxa_debito) : Number(maq.taxa_credito)
+    if (maq) return Number(ehDebito ? maq.taxa_debito : maq.taxa_credito)
     // pagamento antigo, sem maquininha registrada: usa a média das cadastradas
     if (maquininhas.length === 0) return 0
     const soma = maquininhas.reduce((s, m) => s + Number(ehDebito ? m.taxa_debito : m.taxa_credito), 0)
     return soma / maquininhas.length
   }
+
   if (forma === 'dinheiro') return taxas.dinheiro
-  if (forma === 'pix_manual' || forma === 'pix' || forma === 'pix_automatico') return taxas.pix_manual
+
+  // Pix: se foi recebido numa maquininha, vale a taxa dela; senão é a chave do lojista
+  if (forma === 'pix_manual' || forma === 'pix' || forma === 'pix_automatico') {
+    if (maq) return Number(maq.taxa_pix)
+    return taxas.pix_manual
+  }
+
   return 0
 }

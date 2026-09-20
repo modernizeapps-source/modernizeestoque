@@ -64,14 +64,15 @@ export async function adicionarPagamentoPendente(input: {
   venda_id: string
   forma: 'pix_manual'
   valor: number
-  infinitepay_order_nsu?: string
+  maquininha_id?: string | null
 }): Promise<string> {
   const supabase = createClient()
   const { data, error } = await supabase.rpc('adicionar_pagamento_pendente', {
     p_venda_id: input.venda_id,
     p_forma: input.forma,
     p_valor: input.valor,
-    p_infinitepay_order_nsu: input.infinitepay_order_nsu ?? null,
+    p_infinitepay_order_nsu: null,
+    p_maquininha_id: input.maquininha_id ?? null,
   })
   if (error) throw error
   return data as string
