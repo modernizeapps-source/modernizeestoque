@@ -17,6 +17,43 @@ export const TAXA_LABEL: Record<keyof TaxasPagamento, string> = {
   pix_manual: 'Pix',
 }
 
+// Minutos de inatividade até o sistema voltar sozinho pra tela inicial.
+// 0 = nunca volta.
+export async function buscarMinutosInatividade(): Promise<number> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('configuracoes')
+    .select('valor')
+    .eq('chave', 'minutos_inatividade')
+    .maybeSingle()
+
+  if (error) throw error
+  if (!data) return 0
+  const v = (data.valor as any)?.minutos
+  return typeof v === 'number' ? v : 0
+}
+
+export async function salvarMinutosInatividade(minutos: number): Promise<void> {
+  const supabase = createClient()
+
+  const { data: existente } = await supabase
+    .from('configuracoes')
+    .select('id')
+    .eq('chave', 'minutos_inatividade')
+    .maybeSingle()
+
+  if (existente) {
+    const { error } = await supabase
+      .from('configuracoes')
+      .update({ valor: { minutos }, atualizado_em: new Date().toISOString() })
+      .eq('id', existente.id)
+    if (error) throw error
+  } else {
+    const { error } = await supabase.from('configuracoes').insert({ chave: 'minutos_inatividade', valor: { minutos } })
+    if (error) throw error
+  }
+}
+
 export type Maquininha = {
   id: string
   nome: string

@@ -1,4 +1,5 @@
 import './globals.css'
+import VigiaInatividade from './VigiaInatividade'
 
 export const metadata = {
   title: 'Estoque Mercadinho',
@@ -22,6 +23,7 @@ export default function RootLayout({
       </head>
       <body>
         <div className="grid-overlay" />
+        <VigiaInatividade />
         {children}
       </body>
     </html>

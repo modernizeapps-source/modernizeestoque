@@ -216,7 +216,9 @@ export default function VendaPage() {
     setValorPago(novoValorPago)
 
     if (novoValorPago + 0.001 >= totalValor) {
-      // venda concluída
+      // Venda concluída: limpa tudo e fica na própria tela, pronto pro próximo
+      // cliente. Quem leva de volta pra tela inicial é o tempo de inatividade
+      // configurado em Configurações — assim uma fila não fica travada.
       setSucesso(true)
       setMostrarCheckout(false)
       setCarrinho({})

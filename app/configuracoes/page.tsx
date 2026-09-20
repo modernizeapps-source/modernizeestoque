@@ -5,6 +5,7 @@ import Link from 'next/link'
 import {
   buscarTaxas, salvarTaxas, TaxasPagamento, TAXAS_PADRAO, TAXA_LABEL,
   Maquininha, listarMaquininhas, criarMaquininha, atualizarMaquininha, removerMaquininha,
+  buscarMinutosInatividade, salvarMinutosInatividade,
 } from '@/lib/supabase/configuracoes'
 import { useIsDesktop } from '@/lib/useIsDesktop'
 import NavDesktop from '../NavDesktop'
@@ -13,6 +14,9 @@ export default function ConfiguracoesPage() {
   const isDesktop = useIsDesktop()
   const [taxas, setTaxas] = useState<TaxasPagamento>(TAXAS_PADRAO)
   const [maquininhas, setMaquininhas] = useState<Maquininha[]>([])
+  const [minutosInatividade, setMinutosInatividade] = useState(0)
+  const [minutosPersonalizado, setMinutosPersonalizado] = useState('')
+  const [salvandoInatividade, setSalvandoInatividade] = useState(false)
   const [carregando, setCarregando] = useState(true)
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
@@ -34,9 +38,11 @@ export default function ConfiguracoesPage() {
 
   async function carregar() {
     try {
-      const [t, m] = await Promise.all([buscarTaxas(), listarMaquininhas(true)])
+      const [t, m, min] = await Promise.all([buscarTaxas(), listarMaquininhas(true), buscarMinutosInatividade()])
       setTaxas(t)
       setMaquininhas(m)
+      setMinutosInatividade(min)
+      if (min > 0 && ![3, 5, 10, 15, 30].includes(min)) setMinutosPersonalizado(String(min))
     } catch (e) {
       setErro('Não foi possível carregar as configurações.')
     } finally {
@@ -54,6 +60,21 @@ export default function ConfiguracoesPage() {
   function num(v: string) {
     const n = parseFloat(v.replace(',', '.'))
     return isNaN(n) ? 0 : n
+  }
+
+  async function handleSalvarInatividade() {
+    setSalvandoInatividade(true)
+    setErro(null)
+    try {
+      await salvarMinutosInatividade(minutosInatividade)
+      avisar(minutosInatividade > 0
+        ? `Vai voltar pro início após ${minutosInatividade} min parado.`
+        : 'Não vai voltar pro início sozinho.')
+    } catch (e: any) {
+      setErro(e?.message ?? 'Não foi possível salvar.')
+    } finally {
+      setSalvandoInatividade(false)
+    }
   }
 
   async function handleSalvarTaxas(e: React.FormEvent) {
@@ -136,8 +157,57 @@ export default function ConfiguracoesPage() {
       {erro && <p className="error-text" style={{ marginTop: 12 }}>{erro}</p>}
       {sucesso && <div className="success-box" style={{ marginTop: 12 }}>✓ {sucesso}</div>}
 
+      {/* Voltar pro início sozinho */}
+      <p className="section-title" style={{ marginTop: 22 }}>Voltar para o início sozinho</p>
+      <p style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 14, lineHeight: 1.55 }}>
+        Se ninguém mexer no sistema por um tempo, ele volta pra tela inicial sozinho.
+        Isso não atrapalha quem está no meio de uma venda — qualquer clique ou leitura
+        de código reinicia a contagem.
+      </p>
+
+      <div className="card" style={{ marginBottom: 14 }}>
+        <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginBottom: 14 }}>
+          {[0, 3, 5, 10, 15, 30].map((min) => (
+            <button
+              key={min}
+              onClick={() => { setMinutosInatividade(min); setMinutosPersonalizado('') }}
+              className={`pill ${minutosInatividade === min ? 'pill-active' : ''}`}
+            >
+              {min === 0 ? 'Nunca' : `${min} min`}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9, paddingTop: 13, borderTop: '1px solid var(--line)' }}>
+          <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>ou um tempo próprio:</span>
+          <input
+            type="number"
+            min="1"
+            value={minutosPersonalizado}
+            onChange={(e) => {
+              setMinutosPersonalizado(e.target.value)
+              const n = parseInt(e.target.value || '0', 10)
+              if (n > 0) setMinutosInatividade(n)
+            }}
+            placeholder="—"
+            className="input"
+            style={{ width: 72, textAlign: 'right', padding: '8px 10px' }}
+          />
+          <span className="mono" style={{ fontSize: 12, color: 'var(--text-dim)' }}>min</span>
+        </div>
+      </div>
+
+      <button
+        onClick={handleSalvarInatividade}
+        disabled={salvandoInatividade}
+        className="btn-primary"
+        style={{ width: '100%', padding: 12, marginBottom: 30 }}
+      >
+        {salvandoInatividade ? 'Salvando...' : 'Salvar'}
+      </button>
+
       {/* Maquininhas */}
-      <p className="section-title" style={{ marginTop: 22 }}>Maquininhas de cartão</p>
+      <p className="section-title">Maquininhas de cartão</p>
       <p style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 14, lineHeight: 1.5 }}>
         Cadastre as maquininhas que você usa, cada uma com as taxas que ela cobra. Na hora da venda
         você escolhe onde foi passado tocando num botão, e o lucro já desconta a taxa certa.

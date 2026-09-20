@@ -1,64 +1,69 @@
-# Estoque Mercadinho — Pacote 8: painel inicial no computador
+# Estoque Mercadinho — Pacote 10
 
 ## Nada pra configurar
-Sem mudança de banco. Só subir no GitHub e rodar:
+Sem mudança de banco (a configuração usa a tabela que já existia). Só subir no
+GitHub e rodar:
 **Netlify → Deploys → Trigger deploy → Deploy project without cache**
 
 ---
 
-## O celular continua intacto
-Como sempre: conferi automaticamente e o que o celular renderiza é idêntico ao
-de antes. A tela inicial do celular nem passa pelo código novo — ele fica num
-componente separado que só é usado acima de 1024px.
+## Volta pro início por inatividade (no lugar do retorno automático)
 
----
+**Desfiz o comportamento do pacote anterior.** Ao concluir uma venda, o sistema
+agora limpa o carrinho e **fica na tela de venda**, pronto pro próximo cliente —
+sem atrapalhar a fila.
 
-## A tela inicial virou um painel
+Quem leva de volta pra tela inicial é o tempo de inatividade: se ninguém mexer
+no sistema por X minutos, ele volta sozinho. Qualquer clique, leitura de código
+de barras, digitação ou rolagem reinicia a contagem, então isso nunca interrompe
+alguém no meio de uma venda.
 
-Aquele vazio no computador foi preenchido com informação útil, toda ela vinda
-de dados que o sistema já tinha.
+Vale em todas as telas (Venda, Produtos, Caixa, Histórico, Relatórios,
+Configurações).
 
-### Botão "Nova venda" em destaque
-Grande, no topo à direita, com brilho ciano. É a primeira coisa que chama
-atenção. O "Sair" foi pra barra do topo, discreto, pra não competir.
+### Conta mesmo com a aba em segundo plano
+Se ele trocar de aba, minimizar a janela ou sair pra fumar um cigarro, **o tempo
+continua correndo**. Ao voltar pro sistema depois do prazo, já encontra a tela
+inicial.
 
-### Os quatro números, agora numa linha só
-E com contexto embaixo de cada um:
-- **Total vendido** — com a comparação com ontem (↑ ou ↓ em %)
-- **Lucro** — mostrando quanto foi descontado de taxa
-- **Vendas hoje** — com o ticket médio
-- **Estoque baixo** — clicável, leva pra Produtos
+Isso exigiu um cuidado extra: navegadores congelam cronômetros de abas que estão
+em segundo plano, pra economizar bateria. Então, em vez de um cronômetro comum,
+o sistema anota a hora da última vez que alguém mexeu e compara com a hora atual
+sempre que a aba volta a ficar visível. Assim o tempo conta de verdade, mesmo com
+o computador em espera.
 
-### Gráfico dos últimos 7 dias
-Barras com o faturamento de cada dia. Hoje aparece destacado em ciano. Passando
-o mouse, mostra o valor exato.
+### Onde configurar
+Em **Configurações**, na primeira seção da tela: *"Voltar para o início sozinho"*.
 
-### Últimas vendas
-As 5 últimas de hoje, com hora e o que foi vendido. Clicando, abre o detalhe.
+Tem botões prontos — **Nunca · 3 · 5 · 10 · 15 · 30 min** — e um campo livre
+abaixo, caso queira um tempo específico (7 minutos, por exemplo).
 
-### Caixa
-Saldo em dinheiro do caixa aberto e a hora que foi aberto. Se não tiver caixa
-aberto, vira um aviso com botão pra abrir.
+**Nunca** desliga o comportamento por completo. Se não gostarem, é só marcar
+essa opção, sem precisar de pacote novo.
 
-### Como pagaram hoje
-Barras proporcionais por forma de pagamento.
-
-### Precisa repor
-Lista dos produtos com estoque baixo, clicáveis — vão direto pra tela do
-produto, onde tem o "Chegou mercadoria".
-
-### Barra de navegação
-Ganhou o item **Início** no começo. O destaque da seção atual agora funciona
-certo — na tela inicial, "Início" fica marcado.
+Já deixei **5 minutos** configurado como ponto de partida. O Misa pode ir
+testando e mudando até achar o tempo certo.
 
 ---
 
 ## Roteiro de teste
 
-1. Abre **no computador** — a tela inicial deve estar cheia de informação
-2. Confere se "Início" está destacado na barra do topo
-3. Vê se o gráfico dos 7 dias mostra as barras (hoje em ciano)
-4. Clica numa das últimas vendas — deve abrir o detalhe
-5. Clica num produto em "Precisa repor" — deve abrir a tela dele
-6. Clica em "Nova venda" — deve ir pra tela de venda
-7. **Abre no celular** e confirma que a tela inicial está como sempre foi
+1. **Configurações** → confere a seção nova no topo; escolhe 3 min e salva
+2. Vai pra **Produtos** e deixa a tela parada
+3. Depois de 3 minutos sem tocar em nada, deve voltar sozinho pro início
+4. Repete, mas mexendo o mouse de vez em quando — **não** pode voltar
+5. Abre o sistema, troca pra outra aba, espera o tempo passar e volta — deve
+   estar na tela inicial
+6. Faz uma venda até o fim — deve ficar na tela de venda, com o carrinho limpo
+7. Volta em Configurações e marca **Nunca** pra desligar, se preferir
+
+---
+
+## Uma coisa pra conferir
+
+Quando trocamos as taxas de cartão para ficarem por maquininha, aquela taxa de
+10% que você tinha colocado pra teste deixou de valer. Agora a taxa de cartão
+vem da maquininha escolhida na venda.
+
+Se ainda não cadastrou nenhuma maquininha em Configurações, o lucro não está
+descontando taxa de cartão nenhuma. Vale cadastrar com as taxas reais do Misa.
