@@ -1,5 +1,8 @@
 # Estoque Mercadinho — Pacote 11: logins separados (admin e Misa)
 
+> Se o deploy anterior falhou com "cookiesToSet implicitly has an 'any' type",
+> era um erro meu de digitação no middleware. Já está corrigido aqui.
+
 ## O banco já está pronto
 Já criei a estrutura no banco e liguei os dois usuários que você cadastrou:
 - **modernizeapps@gmail.com** → você (administrador)
