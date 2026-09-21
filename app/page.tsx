@@ -1,8 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { buscarMeuPerfil, lerEmpresaAtiva, limparEmpresaAtiva } from '@/lib/supabase/auth'
 import { buscarResumoHoje, ResumoHoje, buscarPainelDesktop, PainelDesktop } from '@/lib/supabase/dashboard'
 import { buscarCaixaAberto } from '@/lib/supabase/caixa'
 import { FORMA_PAGAMENTO_LABEL } from '@/lib/supabase/historico'
@@ -16,7 +18,9 @@ function reais(v: number) {
 
 export default function HomePage() {
   const isDesktop = useIsDesktop()
+  const router = useRouter()
   const supabase = createClient()
+  const [ehAdmin, setEhAdmin] = useState(false)
   const [carregando, setCarregando] = useState(true)
   const [email, setEmail] = useState<string | null>(null)
   const [resumo, setResumo] = useState<ResumoHoje | null>(null)
@@ -25,17 +29,33 @@ export default function HomePage() {
   const [painel, setPainel] = useState<PainelDesktop | null>(null)
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      const userEmail = data.user?.email ?? null
-      setEmail(userEmail)
+    (async () => {
+      const perfil = await buscarMeuPerfil()
+
+      // Ninguém logado → vai pro login
+      if (!perfil) {
+        const { data } = await supabase.auth.getUser()
+        if (!data.user) { router.replace('/login'); return }
+        // logado mas sem perfil ainda: trata como owner comum
+      }
+
+      // Admin que ainda não escolheu empresa → vai pra área administrativa
+      if (perfil?.role === 'admin') {
+        setEhAdmin(true)
+        if (!lerEmpresaAtiva()) { router.replace('/admin'); return }
+      }
+
+      const { data: auth } = await supabase.auth.getUser()
+      setEmail(auth.user?.email ?? null)
       setCarregando(false)
-      if (userEmail) {
+
+      if (auth.user) {
         setCarregandoResumo(true)
         buscarResumoHoje().then(setResumo).finally(() => setCarregandoResumo(false))
         buscarCaixaAberto().then((c) => setCaixaAberto(!!c)).catch(() => setCaixaAberto(null))
       }
-    })
-  }, [])
+    })()
+  }, [router])
 
   // Os dados extras do painel só são buscados no computador — assim o
   // carregamento no celular continua exatamente igual ao de antes.
@@ -45,9 +65,17 @@ export default function HomePage() {
   }, [isDesktop, email])
 
   async function handleSair() {
+    limparEmpresaAtiva()
     await supabase.auth.signOut()
     setEmail(null)
     setResumo(null)
+    router.replace('/login')
+  }
+
+  // Admin volta pra lista de empresas
+  function trocarEmpresa() {
+    limparEmpresaAtiva()
+    router.push('/admin')
   }
 
   if (carregando) {
@@ -71,6 +99,19 @@ export default function HomePage() {
   if (isDesktop) {
     return (
       <>
+        {ehAdmin && (
+          <div style={{
+            position: 'relative', zIndex: 3, background: 'rgba(79,216,255,0.08)',
+            borderBottom: '1px solid var(--line)', padding: '7px 32px',
+            fontSize: 12, color: 'var(--cyan)', display: 'flex', justifyContent: 'center',
+            gap: 14, alignItems: 'center',
+          }}>
+            <span>Você está no modo administrador, vendo os dados do Mercadinho do Misa</span>
+            <button onClick={trocarEmpresa} style={{ border: 'none', background: 'none', color: 'var(--cyan)', textDecoration: 'underline', cursor: 'pointer', fontSize: 12 }}>
+              trocar empresa
+            </button>
+          </div>
+        )}
         <NavDesktop statusCaixa={caixaAberto ? 'caixa aberto' : undefined} onSair={handleSair} />
         {resumo ? (
           <PainelInicioDesktop resumo={resumo} painel={painel} />
@@ -85,6 +126,18 @@ export default function HomePage() {
 
   return (
     <>
+    {ehAdmin && (
+      <div style={{
+        position: 'relative', zIndex: 3, background: 'rgba(79,216,255,0.08)',
+        borderBottom: '1px solid var(--line)', padding: '8px 16px',
+        fontSize: 11.5, color: 'var(--cyan)', textAlign: 'center',
+      }}>
+        Modo administrador ·{' '}
+        <button onClick={trocarEmpresa} style={{ border: 'none', background: 'none', color: 'var(--cyan)', textDecoration: 'underline', cursor: 'pointer', fontSize: 11.5 }}>
+          trocar empresa
+        </button>
+      </div>
+    )}
     <div className="container">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
         <h1 style={{ fontSize: 20, fontWeight: 500 }}>Estoque Mercadinho</h1>

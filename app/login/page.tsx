@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { buscarMeuPerfil } from '@/lib/supabase/auth'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -25,7 +26,14 @@ export default function LoginPage() {
       setErro(`Erro: ${error.message}`)
       return
     }
-    router.push('/')
+
+    // Admin vai pra área de empresas; lojista vai direto pro sistema.
+    const perfil = await buscarMeuPerfil()
+    if (perfil?.role === 'admin') {
+      router.push('/admin')
+    } else {
+      router.push('/')
+    }
   }
 
   return (
