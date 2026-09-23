@@ -27,7 +27,7 @@ export default function HistoricoCaixaPage() {
     <>
     {isDesktop && <NavDesktop />}
     <div className="container col-media" style={{ maxWidth: 460 }}>
-      <Link href="/caixa" className="back-link desktop-oculto">← Voltar</Link>
+      <Link href="/caixa" className="btn-secondary" style={{ padding: '7px 14px', fontSize: 13, marginBottom: 14 }}>← Voltar pro caixa</Link>
       <h1 className="titulo-pagina" style={{ fontSize: 20, fontWeight: 500, marginBottom: 16 }}>Histórico de caixa</h1>
 
       {carregando && <p style={{ color: 'var(--text-dim)', fontSize: 14 }}>Carregando...</p>}

@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { ResumoHoje, PainelDesktop } from '@/lib/supabase/dashboard'
 import { FORMA_PAGAMENTO_LABEL } from '@/lib/supabase/historico'
+import { textoReposicao } from '@/lib/supabase/produtos'
 
 function reais(v: number) {
   return `R$ ${v.toFixed(2).replace('.', ',')}`
@@ -228,20 +229,32 @@ export default function PainelInicioDesktop({ resumo, painel }: { resumo: Resumo
 
           {painel && painel.produtosParaRepor.length > 0 && (
             <Bloco titulo="Precisa repor" acento="ambar">
-              {painel.produtosParaRepor.map((p, i, arr) => (
-                <Link
-                  key={p.id}
-                  href={`/produtos/${p.id}`}
-                  style={{
-                    display: 'flex', justifyContent: 'space-between', padding: '6px 0',
-                    borderBottom: i < arr.length - 1 ? '1px dashed var(--line)' : 'none',
-                    textDecoration: 'none', color: 'var(--text)',
-                  }}
-                >
-                  <span style={{ fontSize: 12 }}>{p.nome}</span>
-                  <span className="mono" style={{ fontSize: 12, color: 'var(--amber)' }}>{p.estoque} un</span>
-                </Link>
-              ))}
+              {painel.produtosParaRepor.map((p, i, arr) => {
+                const repor = textoReposicao(p.estoque, p.minimo, p.unidadesPorFardo)
+                return (
+                  <Link
+                    key={p.id}
+                    href={`/produtos/${p.id}`}
+                    style={{
+                      display: 'block', padding: '8px 0',
+                      borderBottom: i < arr.length - 1 ? '1px dashed var(--line)' : 'none',
+                      textDecoration: 'none', color: 'var(--text)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                      <span style={{ fontSize: 12.5 }}>{p.nome}</span>
+                      {repor && (
+                        <span className="mono" style={{ fontSize: 12, color: 'var(--amber)' }}>
+                          repor {repor}
+                        </span>
+                      )}
+                    </div>
+                    <div className="mono" style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 2 }}>
+                      tem {p.estoque} · mínimo {p.minimo}
+                    </div>
+                  </Link>
+                )
+              })}
             </Bloco>
           )}
         </div>

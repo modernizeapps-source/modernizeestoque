@@ -1,10 +1,10 @@
 'use client'
 
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect, useState, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Categoria, listarCategorias } from '@/lib/supabase/categorias'
-import { criarProduto } from '@/lib/supabase/produtos'
+import { criarProduto, primeiraMaiuscula } from '@/lib/supabase/produtos'
 import { useLeitorCodigoBarras } from '@/lib/useLeitorCodigoBarras'
 import CategoriaPicker from '../CategoriaPicker'
 import { useIsDesktop } from '@/lib/useIsDesktop'
@@ -33,6 +33,8 @@ function NovoProdutoConteudo() {
   const [precoVenda, setPrecoVenda] = useState('')
   const [estoqueAtual, setEstoqueAtual] = useState('')
   const [estoqueMinimo, setEstoqueMinimo] = useState('')
+  const [cadastrado, setCadastrado] = useState<string | null>(null)
+  const campoNomeRef = useRef<HTMLInputElement>(null)
   const [erro, setErro] = useState<string | null>(null)
   const [salvando, setSalvando] = useState(false)
   const [buscandoCosmos, setBuscandoCosmos] = useState(false)
@@ -72,7 +74,9 @@ function NovoProdutoConteudo() {
     buscarNoCosmos(codigo)
   })
 
-  async function handleSalvar(e: React.FormEvent) {
+  // continuar = true: salva e deixa o formulário limpo pro próximo produto,
+  // pra quem está cadastrando vários de uma vez.
+  async function handleSalvar(e: React.FormEvent, continuar = false) {
     e.preventDefault()
     setErro(null)
 
@@ -91,7 +95,21 @@ function NovoProdutoConteudo() {
         estoque_minimo: parseInt(estoqueMinimo || '0', 10),
         codigo_barras: codigoBarras.trim() || null,
       })
-      router.push('/produtos')
+
+      if (continuar) {
+        // Limpa o formulário mas mantém a categoria, que costuma se repetir
+        setCadastrado(nome.trim())
+        setNome('')
+        setPrecoCusto('')
+        setPrecoVenda('')
+        setEstoqueAtual('')
+        setEstoqueMinimo('')
+        setCodigoBarras('')
+        setTimeout(() => setCadastrado(null), 3500)
+        campoNomeRef.current?.focus()
+      } else {
+        router.push('/produtos')
+      }
     } catch (e: any) {
       setErro(e?.message ?? 'Não foi possível salvar o produto. Tente novamente.')
     } finally {
@@ -122,7 +140,13 @@ function NovoProdutoConteudo() {
 
         <div>
           <label className="label">Nome do produto</label>
-          <input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex: Cerveja lata 350ml" className="input" />
+          <input
+            ref={campoNomeRef}
+            value={nome}
+            onChange={(e) => setNome(primeiraMaiuscula(e.target.value))}
+            placeholder="Ex: Cerveja lata 350ml"
+            className="input"
+          />
         </div>
 
         <div>
@@ -149,19 +173,49 @@ function NovoProdutoConteudo() {
         <div style={{ display: 'flex', gap: 12 }}>
           <div style={{ flex: 1 }}>
             <label className="label">Qtd. em estoque</label>
-            <input type="number" value={estoqueAtual} onChange={(e) => setEstoqueAtual(e.target.value)} placeholder="0" className="input" />
+            <input
+              type="text"
+              inputMode="numeric"
+              value={estoqueAtual}
+              onChange={(e) => setEstoqueAtual(e.target.value.replace(/[^0-9]/g, ''))}
+              placeholder="0"
+              className="input"
+            />
           </div>
           <div style={{ flex: 1 }}>
             <label className="label">Estoque mínimo</label>
-            <input type="number" value={estoqueMinimo} onChange={(e) => setEstoqueMinimo(e.target.value)} placeholder="0" className="input" />
+            <input
+              type="text"
+              inputMode="numeric"
+              value={estoqueMinimo}
+              onChange={(e) => setEstoqueMinimo(e.target.value.replace(/[^0-9]/g, ''))}
+              placeholder="0"
+              className="input"
+            />
           </div>
         </div>
 
         {erro && <p className="error-text">{erro}</p>}
+        {cadastrado && (
+          <div className="success-box" style={{ marginBottom: 12 }}>
+            ✓ {cadastrado} cadastrado! Pode digitar o próximo.
+          </div>
+        )}
 
-        <button type="submit" disabled={salvando} className="btn-primary" style={{ width: '100%', padding: 13 }}>
-          {salvando ? 'Salvando...' : 'Salvar produto'}
-        </button>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button
+            type="button"
+            onClick={(e) => handleSalvar(e, true)}
+            disabled={salvando}
+            className="btn-secondary"
+            style={{ flex: 1, padding: 13, justifyContent: 'center' }}
+          >
+            {salvando ? 'Salvando...' : 'Salvar e cadastrar próximo'}
+          </button>
+          <button type="submit" disabled={salvando} className="btn-primary" style={{ flex: 1, padding: 13, justifyContent: 'center' }}>
+            {salvando ? 'Salvando...' : 'Salvar e finalizar'}
+          </button>
+        </div>
       </form>
     </div>
     </>

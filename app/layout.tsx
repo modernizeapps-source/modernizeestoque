@@ -1,5 +1,6 @@
 import './globals.css'
 import VigiaInatividade from './VigiaInatividade'
+import LeitorGlobal from './LeitorGlobal'
 
 export const metadata = {
   title: 'Estoque Mercadinho',
@@ -24,6 +25,7 @@ export default function RootLayout({
       <body>
         <div className="grid-overlay" />
         <VigiaInatividade />
+        <LeitorGlobal />
         {children}
       </body>
     </html>

@@ -144,6 +144,10 @@ export default function HomePage() {
         <button onClick={handleSair} className="btn-secondary" style={{ padding: '6px 12px', fontSize: 13 }}>Sair</button>
       </div>
 
+      <Link href="/venda" className="btn-primary" style={{ width: '100%', padding: 15, fontSize: 15, justifyContent: 'center', marginBottom: 20 }}>
+        + Nova venda
+      </Link>
+
       {carregandoResumo && <p style={{ color: 'var(--text-dim)', fontSize: 14 }}>Carregando resumo do dia...</p>}
 
       {resumo && (
@@ -201,8 +205,8 @@ export default function HomePage() {
         </Link>
       )}
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-        <Link href="/venda" className="btn-primary">Nova venda</Link>
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 4 }}>
         <Link href="/caixa" className="btn-secondary">Caixa {caixaAberto ? '· aberto' : ''}</Link>
         <Link href="/historico" className="btn-secondary">Histórico</Link>
         <Link href="/produtos" className="btn-secondary">Produtos</Link>

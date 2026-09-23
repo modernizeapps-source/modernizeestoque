@@ -63,7 +63,7 @@ export default function DetalheVendaPage() {
     <>
     {isDesktop && <NavDesktop />}
     <div className="container col-estreita" style={{ maxWidth: 420 }}>
-      <Link href="/historico" className="back-link desktop-oculto">← Voltar</Link>
+      <Link href="/historico" className="btn-secondary" style={{ padding: '7px 14px', fontSize: 13, marginBottom: 14 }}>← Voltar</Link>
 
       <h1 style={{ fontSize: 18, fontWeight: 500 }}>
         Venda de {data.toLocaleDateString('pt-BR')} às {data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}

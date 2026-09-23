@@ -5,8 +5,8 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Categoria, listarCategorias } from '@/lib/supabase/categorias'
 import {
-  Produto, buscarProduto, atualizarProduto,
-  registrarEntradaMercadoria, ajustarEstoque, margemLucro,
+  Produto, buscarProduto, atualizarProduto, excluirProduto,
+  registrarEntradaMercadoria, margemLucro, primeiraMaiuscula,
 } from '@/lib/supabase/produtos'
 import { useLeitorCodigoBarras } from '@/lib/useLeitorCodigoBarras'
 import CategoriaPicker from '../CategoriaPicker'
@@ -36,6 +36,7 @@ export default function EditarProdutoPage() {
   const [precoVenda, setPrecoVenda] = useState('')
   const [estoqueMinimo, setEstoqueMinimo] = useState('')
   const [salvando, setSalvando] = useState(false)
+  const [excluindo, setExcluindo] = useState(false)
 
   // entrada de mercadoria
   const [mostrarEntrada, setMostrarEntrada] = useState(false)
@@ -44,11 +45,6 @@ export default function EditarProdutoPage() {
   const [salvandoEntrada, setSalvandoEntrada] = useState(false)
 
   // correções manuais
-  const [mostrarCorrecoes, setMostrarCorrecoes] = useState(false)
-  const [estoqueCorrigido, setEstoqueCorrigido] = useState('')
-  const [motivoCorrecao, setMotivoCorrecao] = useState('')
-  const [custoCorrigido, setCustoCorrigido] = useState('')
-  const [salvandoCorrecao, setSalvandoCorrecao] = useState(false)
 
   async function carregar() {
     try {
@@ -61,8 +57,6 @@ export default function EditarProdutoPage() {
       setCodigoBarras(p.codigo_barras ?? '')
       setPrecoVenda(String(p.preco_venda))
       setEstoqueMinimo(String(p.estoque_minimo))
-      setEstoqueCorrigido(String(p.estoque_atual))
-      setCustoCorrigido(String(p.preco_custo))
     } catch (e) {
       setErro('Não foi possível carregar o produto.')
     } finally {
@@ -96,11 +90,11 @@ export default function EditarProdutoPage() {
         estoque_minimo: parseInt(estoqueMinimo || '0', 10),
         codigo_barras: codigoBarras.trim() || null,
       })
-      await carregar()
-      avisar('Produto salvo!')
+      // Volta pra lista de Produtos levando a confirmação
+      router.push('/produtos?salvo=' + encodeURIComponent(nome.trim()))
     } catch (e: any) {
-      setErro(e?.message ?? 'Não foi possível salvar.')
-    } finally {
+      // Deu erro: fica na tela, com tudo que a pessoa digitou preservado
+      setErro(e?.message ?? 'Não foi possível salvar. Confira os dados e tente de novo.')
       setSalvando(false)
     }
   }
@@ -128,42 +122,23 @@ export default function EditarProdutoPage() {
     }
   }
 
-  async function handleCorrigir(e: React.FormEvent) {
-    e.preventDefault()
+  async function handleExcluir() {
+    if (!produto) return
+    const certeza = confirm(
+      `Excluir "${produto.nome}" de vez?\n\nIsso não pode ser desfeito. ` +
+      `Se o produto já foi vendido alguma vez, ele não poderá ser excluído — ` +
+      `o histórico de vendas precisa dele.`
+    )
+    if (!certeza) return
+
+    setExcluindo(true)
     setErro(null)
-    setSalvandoCorrecao(true)
     try {
-      const novoEstoque = parseInt(estoqueCorrigido || '0', 10)
-      const novoCusto = parseFloat((custoCorrigido || '0').replace(',', '.'))
-
-      if (novoEstoque !== produto!.estoque_atual) {
-        if (!motivoCorrecao.trim()) {
-          setErro('Diga o motivo da correção de estoque.')
-          setSalvandoCorrecao(false)
-          return
-        }
-        await ajustarEstoque(id, novoEstoque, motivoCorrecao.trim())
-      }
-
-      if (novoCusto !== produto!.preco_custo) {
-        await atualizarProduto(id, {
-          nome: produto!.nome,
-          categoria_id: produto!.categoria_id!,
-          preco_venda: produto!.preco_venda,
-          preco_custo: novoCusto,
-          estoque_minimo: produto!.estoque_minimo,
-          codigo_barras: produto!.codigo_barras,
-        })
-      }
-
-      setMostrarCorrecoes(false)
-      setMotivoCorrecao('')
-      await carregar()
-      avisar('Correção aplicada!')
+      await excluirProduto(id)
+      router.push('/produtos?excluido=' + encodeURIComponent(produto.nome))
     } catch (e: any) {
-      setErro(e?.message ?? 'Não foi possível corrigir.')
-    } finally {
-      setSalvandoCorrecao(false)
+      setErro(e?.message ?? 'Não foi possível excluir.')
+      setExcluindo(false)
     }
   }
 
@@ -255,7 +230,7 @@ export default function EditarProdutoPage() {
       <form onSubmit={handleSalvar} style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 24 }}>
         <div>
           <label className="label">Nome</label>
-          <input value={nome} onChange={(e) => setNome(e.target.value)} className="input" />
+          <input value={nome} onChange={(e) => setNome(primeiraMaiuscula(e.target.value))} className="input" />
         </div>
 
         <div>
@@ -280,7 +255,13 @@ export default function EditarProdutoPage() {
           </div>
           <div style={{ flex: 1 }}>
             <label className="label">Estoque mínimo</label>
-            <input type="number" value={estoqueMinimo} onChange={(e) => setEstoqueMinimo(e.target.value)} className="input" />
+            <input
+              type="text"
+              inputMode="numeric"
+              value={estoqueMinimo}
+              onChange={(e) => setEstoqueMinimo(e.target.value.replace(/[^0-9]/g, ''))}
+              className="input"
+            />
           </div>
         </div>
 
@@ -289,49 +270,21 @@ export default function EditarProdutoPage() {
         </button>
       </form>
 
-      {/* Correções manuais */}
-      {!mostrarCorrecoes ? (
+      {/* Excluir produto */}
+      <div style={{ borderTop: '1px solid var(--line)', paddingTop: 18, marginTop: 4 }}>
         <button
-          onClick={() => setMostrarCorrecoes(true)}
-          style={{ border: 'none', background: 'none', color: 'var(--text-dim)', fontSize: 12, cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
+          onClick={handleExcluir}
+          disabled={excluindo}
+          className="btn-danger"
+          style={{ width: '100%', padding: 12, fontSize: 13.5 }}
         >
-          Corrigir estoque ou custo manualmente
+          {excluindo ? 'Excluindo...' : 'Excluir produto'}
         </button>
-      ) : (
-        <div className="card">
-          <h2 style={{ fontSize: 15, fontWeight: 500, marginBottom: 4 }}>Correção manual</h2>
-          <p style={{ fontSize: 11.5, color: 'var(--text-dim)', marginBottom: 14, lineHeight: 1.5 }}>
-            Use quando a contagem da prateleira não bater com o sistema, ou pra consertar um erro de digitação no custo.
-            Pra mercadoria nova, use "Chegou mercadoria" — lá o custo médio é calculado sozinho.
-          </p>
-          <form onSubmit={handleCorrigir}>
-            <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
-              <div style={{ flex: 1 }}>
-                <label className="label">Estoque real</label>
-                <input type="number" value={estoqueCorrigido} onChange={(e) => setEstoqueCorrigido(e.target.value)} className="input" />
-              </div>
-              <div style={{ flex: 1 }}>
-                <label className="label">Preço de custo</label>
-                <input type="number" step="0.01" value={custoCorrigido} onChange={(e) => setCustoCorrigido(e.target.value)} className="input" />
-              </div>
-            </div>
+        <p style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 9, lineHeight: 1.5, textAlign: 'center' }}>
+          Produtos que já foram vendidos não podem ser excluídos, pra não quebrar o histórico.
+        </p>
+      </div>
 
-            {parseInt(estoqueCorrigido || '0', 10) !== produto.estoque_atual && (
-              <div style={{ marginBottom: 12 }}>
-                <label className="label">Motivo da correção de estoque</label>
-                <input value={motivoCorrecao} onChange={(e) => setMotivoCorrecao(e.target.value)} placeholder="Ex: contagem de prateleira, quebra, perda" className="input" />
-              </div>
-            )}
-
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button type="button" onClick={() => { setMostrarCorrecoes(false); setEstoqueCorrigido(String(produto.estoque_atual)); setCustoCorrigido(String(produto.preco_custo)) }} className="btn-secondary" style={{ flex: 1, padding: 12 }}>Cancelar</button>
-              <button type="submit" disabled={salvandoCorrecao} className="btn-primary" style={{ flex: 2, padding: 12 }}>
-                {salvandoCorrecao ? 'Aplicando...' : 'Aplicar correção'}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
     </div>
     </>
   )

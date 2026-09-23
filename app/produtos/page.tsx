@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { Produto, listarProdutos, margemLucro } from '@/lib/supabase/produtos'
+import { useSearchParams } from 'next/navigation'
 import { useIsDesktop } from '@/lib/useIsDesktop'
 import NavDesktop from '../NavDesktop'
 import { Categoria, listarCategorias } from '@/lib/supabase/categorias'
@@ -11,14 +12,29 @@ function reais(v: number) {
   return `R$ ${v.toFixed(2).replace('.', ',')}`
 }
 
-export default function ProdutosPage() {
+function ProdutosConteudo() {
   const isDesktop = useIsDesktop()
+  const params = useSearchParams()
+  const salvo = params.get('salvo')
+  const excluido = params.get('excluido')
   const [produtos, setProdutos] = useState<Produto[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [categoriaId, setCategoriaId] = useState<string | null>(null)
   const [busca, setBusca] = useState('')
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState<string | null>(null)
+  const [aviso, setAviso] = useState<string | null>(null)
+
+  // Mostra a confirmação vinda da tela de edição e limpa a URL depois
+  useEffect(() => {
+    if (salvo) setAviso(`${salvo} atualizado com sucesso!`)
+    else if (excluido) setAviso(`${excluido} foi excluído.`)
+    if (salvo || excluido) {
+      window.history.replaceState({}, '', '/produtos')
+      const t = setTimeout(() => setAviso(null), 3500)
+      return () => clearTimeout(t)
+    }
+  }, [salvo, excluido])
 
   useEffect(() => {
     Promise.all([listarProdutos(), listarCategorias()])
@@ -42,7 +58,10 @@ export default function ProdutosPage() {
       <Link href="/" className="back-link desktop-oculto">← Voltar</Link>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <h1 className="titulo-pagina" style={{ fontSize: 20, fontWeight: 500 }}>Produtos</h1>
-        <Link href="/produtos/novo" className="btn-primary" style={{ padding: '8px 14px', fontSize: 13 }}>+ Novo produto</Link>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Link href="/categorias" className="btn-secondary" style={{ padding: '8px 14px', fontSize: 13 }}>Categorias</Link>
+          <Link href="/produtos/novo" className="btn-primary" style={{ padding: '8px 14px', fontSize: 13 }}>+ Novo produto</Link>
+        </div>
       </div>
 
       {!carregando && !erro && produtos.length > 0 && (
@@ -103,5 +122,13 @@ export default function ProdutosPage() {
       </div>
     </div>
     </>
+  )
+}
+
+export default function ProdutosPage() {
+  return (
+    <Suspense fallback={<p style={{ position: 'relative', zIndex: 1, textAlign: 'center', marginTop: 60, color: 'var(--text-dim)' }}>Carregando...</p>}>
+      <ProdutosConteudo />
+    </Suspense>
   )
 }

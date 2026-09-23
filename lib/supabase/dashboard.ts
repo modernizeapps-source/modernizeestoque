@@ -108,7 +108,7 @@ export type PainelDesktop = {
   variacaoVsOntem: number | null
   ultimos7Dias: { rotulo: string; total: number; ehHoje: boolean }[]
   ultimasVendas: { id: string; hora: string; resumo: string; valor: number }[]
-  produtosParaRepor: { id: string; nome: string; estoque: number }[]
+  produtosParaRepor: { id: string; nome: string; estoque: number; minimo: number; unidadesPorFardo: number | null }[]
   caixaAberto: { id: string; saldoDinheiro: number; abertoEm: string } | null
 }
 
@@ -200,13 +200,19 @@ export async function buscarPainelDesktop(): Promise<PainelDesktop> {
   // ——— Produtos que precisam de reposição ———
   const { data: produtos } = await supabase
     .from('produtos')
-    .select('id, nome, estoque_atual, estoque_minimo')
+    .select('id, nome, estoque_atual, estoque_minimo, categorias(unidades_por_fardo)')
     .order('estoque_atual', { ascending: true })
 
   const produtosParaRepor = ((produtos ?? []) as any[])
     .filter((p) => p.estoque_atual <= p.estoque_minimo)
     .slice(0, 6)
-    .map((p) => ({ id: p.id, nome: p.nome, estoque: p.estoque_atual }))
+    .map((p) => ({
+      id: p.id,
+      nome: p.nome,
+      estoque: p.estoque_atual,
+      minimo: p.estoque_minimo,
+      unidadesPorFardo: p.categorias?.unidades_por_fardo ?? null,
+    }))
 
   // ——— Caixa aberto e quanto tem de dinheiro nele ———
   const { data: sessao } = await supabase

@@ -155,3 +155,45 @@ export function margemLucro(precoVenda: number, precoCusto: number): number {
   if (!precoVenda || precoVenda <= 0) return 0
   return ((precoVenda - precoCusto) / precoVenda) * 100
 }
+
+// Deixa a primeira letra maiúscula sem mexer no resto do que a pessoa digitou.
+// Útil pra quem digita rápido no balcão e não quer se preocupar com o Shift.
+export function primeiraMaiuscula(texto: string): string {
+  if (!texto) return texto
+  return texto.charAt(0).toUpperCase() + texto.slice(1)
+}
+
+export async function excluirProduto(id: string): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase.from('produtos').delete().eq('id', id)
+  if (error) {
+    // Produto já usado em vendas não pode sumir, senão o histórico quebra
+    if ((error as any).code === '23503') {
+      throw new Error('Esse produto já foi vendido, então não pode ser excluído — o histórico de vendas precisa dele. Você pode zerar o estoque dele.')
+    }
+    throw error
+  }
+}
+
+// Quanto falta pra chegar no estoque mínimo, escrito do jeito que o lojista
+// compra: em fardos quando a categoria é vendida assim, em unidades quando não.
+// Ex: faltam 29 latas e o fardo tem 24 → "1 fardo + 5 un".
+export function textoReposicao(
+  estoqueAtual: number,
+  estoqueMinimo: number,
+  unidadesPorFardo?: number | null
+): string {
+  const falta = Math.max(0, estoqueMinimo - estoqueAtual)
+  if (falta === 0) return ''
+
+  if (unidadesPorFardo && unidadesPorFardo > 0) {
+    const fardos = Math.floor(falta / unidadesPorFardo)
+    const avulsas = falta % unidadesPorFardo
+    const partes: string[] = []
+    if (fardos > 0) partes.push(`${fardos} ${fardos === 1 ? 'fardo' : 'fardos'}`)
+    if (avulsas > 0) partes.push(`${avulsas} un`)
+    return partes.join(' + ')
+  }
+
+  return `${falta} un`
+}

@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { listarCategorias, Categoria } from '@/lib/supabase/categorias'
 import { listarProdutos, buscarProdutoPorCodigoBarras, Produto } from '@/lib/supabase/produtos'
 import {
@@ -35,7 +36,8 @@ type EtapaCheckout =
   | 'pagamento_pix_manual'
   | 'pagamento_cartao'
 
-export default function VendaPage() {
+function VendaConteudo() {
+  const params = useSearchParams()
   const isDesktop = useIsDesktop()
   const [produtos, setProdutos] = useState<Produto[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
@@ -132,9 +134,9 @@ export default function VendaPage() {
     })
   }
 
-  // Leitor de código de barras: ativo na tela de montar o carrinho (não durante o checkout)
-  useLeitorCodigoBarras(async (codigo) => {
-    if (mostrarCheckout) return
+  // Acha o produto pelo código de barras e joga no carrinho. Se o produto já
+  // estiver lá, só aumenta a quantidade.
+  async function processarCodigoBarras(codigo: string) {
     setCodigoNaoEncontrado(null)
     const jaCadastrado = produtos.find((p) => p.codigo_barras === codigo)
     if (jaCadastrado) {
@@ -152,31 +154,55 @@ export default function VendaPage() {
     } catch (e) {
       setCodigoNaoEncontrado(codigo)
     }
+  }
+
+  // Leitor de código de barras: ativo na tela de montar o carrinho (não durante o checkout)
+  useLeitorCodigoBarras((codigo) => {
+    if (mostrarCheckout) return
+    processarCodigoBarras(codigo)
   }, !mostrarCheckout && !carregando)
 
-  async function abrirCheckout() {
+  // Código bipado em outra tela chega aqui pela URL (?codigo=...).
+  // Processa, joga no carrinho e limpa a URL pra não repetir ao recarregar.
+  useEffect(() => {
+    const codigo = params.get('codigo')
+    if (!codigo || carregando || produtos.length === 0) return
+    processarCodigoBarras(codigo)
+    window.history.replaceState({}, '', '/venda')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params, carregando, produtos.length])
+
+  function abrirCheckout() {
     if (!caixa) {
       setErro('Abra o caixa antes de vender.')
       return
     }
+    // A venda só é criada no banco quando o primeiro pagamento é confirmado.
+    // Assim, se o atendente desistir, fechar a aba ou o sistema voltar pro
+    // início por inatividade, nada fica pendurado como "aguardando pagamento".
     setErroCheckout(null)
     setVendaId(null)
     setValorPago(0)
+    setValorParcial('')
     setEtapa('escolhendo_forma')
     setMostrarCheckout(true)
+  }
 
-    try {
-      const itens: ItemCarrinho[] = itensCarrinho.map((i) => ({
-        produto_id: i.produto.id,
-        quantidade: i.quantidade,
-        preco_venda_unitario: i.produto.preco_venda,
-        preco_custo_unitario: i.produto.preco_custo,
-      }))
-      const id = await criarVenda(itens, caixa.id)
-      setVendaId(id)
-    } catch (e: any) {
-      setErroCheckout(e?.message ?? 'Não foi possível iniciar a venda.')
-    }
+  // Garante que a venda exista no banco, criando-a na hora do primeiro
+  // pagamento. Nos pagamentos seguintes (venda dividida), reaproveita a mesma.
+  async function garantirVendaCriada(): Promise<string> {
+    if (vendaId) return vendaId
+    if (!caixa) throw new Error('Abra o caixa antes de vender.')
+
+    const itens: ItemCarrinho[] = itensCarrinho.map((i) => ({
+      produto_id: i.produto.id,
+      quantidade: i.quantidade,
+      preco_venda_unitario: i.produto.preco_venda,
+      preco_custo_unitario: i.produto.preco_custo,
+    }))
+    const id = await criarVenda(itens, caixa.id)
+    setVendaId(id)
+    return id
   }
 
   async function fecharCheckoutSemPagar() {
@@ -234,7 +260,6 @@ export default function VendaPage() {
   }
 
   async function handleConfirmarDinheiro() {
-    if (!vendaId) return
     const recebido = parseFloat(valorRecebido.replace(',', '.') || '0')
     if (recebido < valorACobrar) {
       setErroCheckout('O valor recebido é menor que o valor a receber.')
@@ -243,8 +268,9 @@ export default function VendaPage() {
     setProcessando(true)
     setErroCheckout(null)
     try {
+      const id = await garantirVendaCriada()
       await adicionarPagamentoConfirmado({
-        venda_id: vendaId,
+        venda_id: id,
         forma: 'dinheiro',
         valor: valorACobrar,
         valor_recebido: recebido,
@@ -259,12 +285,12 @@ export default function VendaPage() {
   }
 
   async function handleConfirmarPixManual() {
-    if (!vendaId) return
     setProcessando(true)
     setErroCheckout(null)
     try {
+      const id = await garantirVendaCriada()
       const pagamentoId = await adicionarPagamentoPendente({
-        venda_id: vendaId, forma: 'pix_manual', valor: valorACobrar, maquininha_id: pixMaquininhaId,
+        venda_id: id, forma: 'pix_manual', valor: valorACobrar, maquininha_id: pixMaquininhaId,
       })
       await confirmarPagamentoPendente(pagamentoId)
       await aposPagamentoConfirmado(valorACobrar)
@@ -276,7 +302,6 @@ export default function VendaPage() {
   }
 
   async function handleConfirmarCartao() {
-    if (!vendaId) return
     if (maquininhas.length > 0 && !maquininhaId) {
       setErroCheckout('Escolha em qual maquininha foi passado.')
       return
@@ -284,8 +309,9 @@ export default function VendaPage() {
     setProcessando(true)
     setErroCheckout(null)
     try {
+      const id = await garantirVendaCriada()
       await adicionarPagamentoConfirmado({
-        venda_id: vendaId,
+        venda_id: id,
         forma: 'cartao',
         valor: valorACobrar,
         tipo_cartao: tipoCartao,
@@ -663,5 +689,13 @@ export default function VendaPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function VendaPage() {
+  return (
+    <Suspense fallback={<p style={{ position: 'relative', zIndex: 1, textAlign: 'center', marginTop: 60, color: 'var(--text-dim)' }}>Carregando...</p>}>
+      <VendaConteudo />
+    </Suspense>
   )
 }
