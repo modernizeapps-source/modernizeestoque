@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useMemo, useState } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { listarCategorias, Categoria } from '@/lib/supabase/categorias'
@@ -162,11 +162,26 @@ function VendaConteudo() {
     processarCodigoBarras(codigo)
   }, !mostrarCheckout && !carregando)
 
-  // Código bipado em outra tela chega aqui pela URL (?codigo=...).
-  // Processa, joga no carrinho e limpa a URL pra não repetir ao recarregar.
+  // Código bipado em OUTRA tela chega aqui pela URL (?codigo=...).
+  //
+  // A trava abaixo é só pra esse código da URL não ser contado duas vezes
+  // (buscar o produto muda a lista de produtos, o que faria o efeito rodar de
+  // novo). Ela NÃO limita bipar o mesmo produto várias vezes: do segundo bip
+  // em diante você já está na tela de Venda, e quem captura é o leitor daqui,
+  // que soma normalmente. Três cervejas = três bips = três no carrinho.
+  const urlJaProcessada = useRef<string | null>(null)
   useEffect(() => {
     const codigo = params.get('codigo')
-    if (!codigo || carregando || produtos.length === 0) return
+
+    // Sem código na URL: libera a trava pra próxima vinda de fora
+    if (!codigo) {
+      urlJaProcessada.current = null
+      return
+    }
+    if (carregando || produtos.length === 0) return
+    if (urlJaProcessada.current === codigo) return
+
+    urlJaProcessada.current = codigo
     processarCodigoBarras(codigo)
     window.history.replaceState({}, '', '/venda')
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -14,6 +14,9 @@ import {
   corrigirValorInicialCaixa,
 } from '@/lib/supabase/caixa'
 import { FORMA_PAGAMENTO_LABEL } from '@/lib/supabase/historico'
+import HistoricoCaixa from './HistoricoCaixa'
+import { useSessao } from '../SessaoProvider'
+import { podeVerDinheiroDoNegocio } from '@/lib/supabase/auth'
 import { useIsDesktop } from '@/lib/useIsDesktop'
 import NavDesktop from '../NavDesktop'
 
@@ -23,6 +26,8 @@ function reais(v: number) {
 
 export default function CaixaPage() {
   const isDesktop = useIsDesktop()
+  const { perfil } = useSessao()
+  const [verHistorico, setVerHistorico] = useState(false)
   const [carregando, setCarregando] = useState(true)
   const [caixa, setCaixa] = useState<CaixaSessao | null>(null)
   const [movimentos, setMovimentos] = useState<CaixaMovimento[]>([])
@@ -155,6 +160,18 @@ export default function CaixaPage() {
 
   if (carregando) return <p style={{ position: 'relative', zIndex: 1, textAlign: 'center', marginTop: 60, color: 'var(--text-dim)' }}>Carregando...</p>
 
+  // O histórico vive dentro da própria tela de Caixa, sem virar outra aba
+  if (verHistorico) {
+    return (
+      <>
+      {isDesktop && <NavDesktop />}
+      <div className="container col-media" style={{ maxWidth: 560, paddingBottom: 80 }}>
+        <HistoricoCaixa aoVoltar={() => setVerHistorico(false)} />
+      </div>
+      </>
+    )
+  }
+
   return (
     <>
     {isDesktop && <NavDesktop />}
@@ -162,7 +179,11 @@ export default function CaixaPage() {
       <Link href="/" className="back-link desktop-oculto">← Voltar</Link>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <h1 className="titulo-pagina" style={{ fontSize: 20, fontWeight: 500 }}>Caixa</h1>
-        <Link href="/caixa/historico" className="btn-secondary" style={{ padding: '8px 14px', fontSize: 13 }}>Histórico</Link>
+        {podeVerDinheiroDoNegocio(perfil?.role) && (
+          <button onClick={() => setVerHistorico(true)} className="btn-secondary" style={{ padding: '8px 14px', fontSize: 13 }}>
+            Histórico
+          </button>
+        )}
       </div>
 
       {erro && <p className="error-text" style={{ marginBottom: 12 }}>{erro}</p>}

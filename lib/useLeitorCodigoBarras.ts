@@ -22,8 +22,10 @@ export function useLeitorCodigoBarras(onScan: (codigo: string) => void, ativo: b
       const intervalo = agora - ultimoTempoRef.current
       ultimoTempoRef.current = agora
 
-      // Passou muito tempo desde a última tecla: começa um buffer novo
-      if (intervalo > 80) {
+      // Passou muito tempo desde a última tecla: começa um buffer novo.
+      // 120ms cobre leitores mais lentos sem confundir com digitação humana
+      // (uma pessoa rápida leva uns 150ms entre teclas).
+      if (intervalo > 120) {
         bufferRef.current = ''
       }
 
@@ -33,7 +35,7 @@ export function useLeitorCodigoBarras(onScan: (codigo: string) => void, ativo: b
 
         // Só considera leitura de código de barras se as teclas vieram rápido
         // demais pra ser uma pessoa digitando, e o código tem um tamanho plausível
-        if (codigo.length >= 4 && intervalo <= 80) {
+        if (codigo.length >= 4 && intervalo <= 120) {
           onScanRef.current(codigo)
         }
         return

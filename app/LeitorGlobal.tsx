@@ -20,7 +20,7 @@ export default function LeitorGlobal() {
     // Manda o código na URL; a tela de Venda cuida de achar o produto,
     // somar ao carrinho e avisar se o código não existir.
     router.push(`/venda?codigo=${encodeURIComponent(codigo)}`)
-  }, !ehTelaPropria && pathname !== '/login')
+  }, !ehTelaPropria && pathname !== '/login' && pathname !== '/criar-conta')
 
   return null
 }

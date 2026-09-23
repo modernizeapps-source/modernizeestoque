@@ -4,13 +4,18 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { buscarMeuPerfil, lerEmpresaAtiva, limparEmpresaAtiva } from '@/lib/supabase/auth'
+import { lerEmpresaAtiva, limparEmpresaAtiva, podeVerDinheiroDoNegocio } from '@/lib/supabase/auth'
+import { useSessao } from './SessaoProvider'
+import TrocarUsuario from './TrocarUsuario'
+import { useT } from '@/lib/i18n'
 import { buscarResumoHoje, ResumoHoje, buscarPainelDesktop, PainelDesktop } from '@/lib/supabase/dashboard'
 import { buscarCaixaAberto } from '@/lib/supabase/caixa'
 import { FORMA_PAGAMENTO_LABEL } from '@/lib/supabase/historico'
 import { useIsDesktop } from '@/lib/useIsDesktop'
 import NavDesktop from './NavDesktop'
 import PainelInicioDesktop from './PainelInicioDesktop'
+import PainelFuncionario from './PainelFuncionario'
+import SeletorIdioma from './SeletorIdioma'
 
 function reais(v: number) {
   return `R$ ${v.toFixed(2).replace('.', ',')}`
@@ -20,7 +25,12 @@ export default function HomePage() {
   const isDesktop = useIsDesktop()
   const router = useRouter()
   const supabase = createClient()
-  const [ehAdmin, setEhAdmin] = useState(false)
+  const { perfil, carregando: carregandoPerfil } = useSessao()
+  const t = useT()
+  const [mostrarTroca, setMostrarTroca] = useState(false)
+
+  const ehAdmin = perfil?.role === 'admin'
+  const vePainelCompleto = podeVerDinheiroDoNegocio(perfil?.role)
   const [carregando, setCarregando] = useState(true)
   const [email, setEmail] = useState<string | null>(null)
   const [resumo, setResumo] = useState<ResumoHoje | null>(null)
@@ -29,40 +39,38 @@ export default function HomePage() {
   const [painel, setPainel] = useState<PainelDesktop | null>(null)
 
   useEffect(() => {
+    if (carregandoPerfil) return
+
     (async () => {
-      const perfil = await buscarMeuPerfil()
-
-      // Ninguém logado → vai pro login
-      if (!perfil) {
-        const { data } = await supabase.auth.getUser()
-        if (!data.user) { router.replace('/login'); return }
-        // logado mas sem perfil ainda: trata como owner comum
-      }
-
-      // Admin que ainda não escolheu empresa → vai pra área administrativa
-      if (perfil?.role === 'admin') {
-        setEhAdmin(true)
-        if (!lerEmpresaAtiva()) { router.replace('/admin'); return }
-      }
-
       const { data: auth } = await supabase.auth.getUser()
-      setEmail(auth.user?.email ?? null)
+      if (!auth.user) { router.replace('/login'); return }
+
+      // Admin que ainda não escolheu empresa vai pra área administrativa
+      if (perfil?.role === 'admin' && !lerEmpresaAtiva()) {
+        router.replace('/admin')
+        return
+      }
+
+      setEmail(auth.user.email ?? null)
       setCarregando(false)
 
-      if (auth.user) {
+      buscarCaixaAberto().then((c) => setCaixaAberto(!!c)).catch(() => setCaixaAberto(null))
+
+      // Funcionário não vê faturamento nem lucro do negócio
+      if (podeVerDinheiroDoNegocio(perfil?.role)) {
         setCarregandoResumo(true)
         buscarResumoHoje().then(setResumo).finally(() => setCarregandoResumo(false))
-        buscarCaixaAberto().then((c) => setCaixaAberto(!!c)).catch(() => setCaixaAberto(null))
       }
     })()
-  }, [router])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [carregandoPerfil, perfil?.role, router])
 
   // Os dados extras do painel só são buscados no computador — assim o
   // carregamento no celular continua exatamente igual ao de antes.
   useEffect(() => {
-    if (!isDesktop || !email) return
+    if (!isDesktop || !email || !vePainelCompleto) return
     buscarPainelDesktop().then(setPainel).catch(() => setPainel(null))
-  }, [isDesktop, email])
+  }, [isDesktop, email, vePainelCompleto])
 
   async function handleSair() {
     limparEmpresaAtiva()
@@ -113,19 +121,23 @@ export default function HomePage() {
           </div>
         )}
         <NavDesktop statusCaixa={caixaAberto ? 'caixa aberto' : undefined} onSair={handleSair} />
-        {resumo ? (
+        {!vePainelCompleto ? (
+          <PainelFuncionario caixaAberto={caixaAberto} nome={perfil?.nome ?? null} aoTrocar={() => setMostrarTroca(true)} />
+        ) : resumo ? (
           <PainelInicioDesktop resumo={resumo} painel={painel} />
         ) : (
           <p style={{ position: 'relative', zIndex: 1, textAlign: 'center', marginTop: 60, color: 'var(--text-dim)' }}>
             Carregando...
           </p>
         )}
+        {mostrarTroca && <TrocarUsuario aoFechar={() => setMostrarTroca(false)} />}
       </>
     )
   }
 
   return (
     <>
+    {mostrarTroca && <TrocarUsuario aoFechar={() => setMostrarTroca(false)} />}
     {ehAdmin && (
       <div style={{
         position: 'relative', zIndex: 3, background: 'rgba(79,216,255,0.08)',
@@ -141,11 +153,36 @@ export default function HomePage() {
     <div className="container">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
         <h1 style={{ fontSize: 20, fontWeight: 500 }}>Estoque Mercadinho</h1>
-        <button onClick={handleSair} className="btn-secondary" style={{ padding: '6px 12px', fontSize: 13 }}>Sair</button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {perfil?.nome && (
+            <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>{perfil.nome}</span>
+          )}
+          <button onClick={handleSair} className="btn-secondary" style={{ padding: '6px 12px', fontSize: 13 }}>{t('sair')}</button>
+        </div>
       </div>
 
+      {!vePainelCompleto && (
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          gap: 12, marginBottom: 18, paddingBottom: 14, borderBottom: '1px solid var(--line)',
+        }}>
+          <div>
+            <div className="mono" style={{ fontSize: 9, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.09em' }}>
+              {t('quemEstaOperando')}
+            </div>
+            <div style={{ fontSize: 17, fontWeight: 500, marginTop: 3 }}>{perfil?.nome ?? '—'}</div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <SeletorIdioma />
+            <button onClick={() => setMostrarTroca(true)} className="btn-secondary" style={{ padding: '8px 13px', fontSize: 12.5, whiteSpace: 'nowrap' }}>
+              {t('trocarUsuario')}
+            </button>
+          </div>
+        </div>
+      )}
+
       <Link href="/venda" className="btn-primary" style={{ width: '100%', padding: 15, fontSize: 15, justifyContent: 'center', marginBottom: 20 }}>
-        + Nova venda
+        + {t('novaVenda')}
       </Link>
 
       {carregandoResumo && <p style={{ color: 'var(--text-dim)', fontSize: 14 }}>Carregando resumo do dia...</p>}
@@ -206,11 +243,12 @@ export default function HomePage() {
 
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 4 }}>
-        <Link href="/caixa" className="btn-secondary">Caixa {caixaAberto ? '· aberto' : ''}</Link>
-        <Link href="/historico" className="btn-secondary">Histórico</Link>
-        <Link href="/produtos" className="btn-secondary">Produtos</Link>
-        <Link href="/relatorios" className="btn-secondary">Relatórios</Link>
-        <Link href="/configuracoes" className="btn-secondary">Configurações</Link>
+        <Link href="/caixa" className="btn-secondary">{t('caixa')} {caixaAberto ? '· ✓' : ''}</Link>
+        <Link href="/produtos" className="btn-secondary">{t('produtos')}</Link>
+        {vePainelCompleto && <Link href="/historico" className="btn-secondary">Histórico</Link>}
+        {vePainelCompleto && <Link href="/relatorios" className="btn-secondary">Relatórios</Link>}
+        {vePainelCompleto && <Link href="/equipe" className="btn-secondary">Funcionários</Link>}
+        {vePainelCompleto && <Link href="/configuracoes" className="btn-secondary">Configurações</Link>}
       </div>
     </div>
     </>

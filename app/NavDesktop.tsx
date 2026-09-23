@@ -2,21 +2,35 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useSessao } from './SessaoProvider'
+import { podeAbrir } from '@/lib/supabase/auth'
+import { useT } from '@/lib/i18n'
 
 const LINKS = [
-  { href: '/', nome: 'Início' },
-  { href: '/venda', nome: 'Venda' },
-  { href: '/produtos', nome: 'Produtos' },
-  { href: '/caixa', nome: 'Caixa' },
-  { href: '/historico', nome: 'Histórico' },
-  { href: '/relatorios', nome: 'Relatórios' },
-  { href: '/configuracoes', nome: 'Configurações' },
+  { href: '/', chave: 'inicio' as const, nome: 'Início' },
+  { href: '/venda', chave: 'venda' as const, nome: 'Venda' },
+  { href: '/produtos', chave: 'produtos' as const, nome: 'Produtos' },
+  { href: '/caixa', chave: 'caixa' as const, nome: 'Caixa' },
+  { href: '/historico', chave: null, nome: 'Histórico' },
+  { href: '/relatorios', chave: 'relatorios' as const, nome: 'Relatórios' },
+  { href: '/equipe', chave: null, nome: 'Funcionários' },
+  { href: '/configuracoes', chave: null, nome: 'Configurações' },
 ]
 
 // Barra de navegação fixa no topo — só aparece no layout de computador.
 // No celular, a navegação continua sendo pela tela inicial, como sempre foi.
 export default function NavDesktop({ statusCaixa, onSair }: { statusCaixa?: string; onSair?: () => void }) {
   const pathname = usePathname()
+  const { perfil, carregando } = useSessao()
+  const t = useT()
+
+  // Cada papel vê só as telas que pode abrir.
+  // Enquanto o perfil não chega, mostra só o básico — assim ninguém fica com a
+  // barra vazia, e nada de dono (relatórios, configurações, equipe) aparece
+  // pra quem não deve ver.
+  const links = LINKS.filter((l) =>
+    perfil ? podeAbrir(perfil.role, l.href) : ['/', '/venda', '/produtos', '/caixa'].includes(l.href)
+  )
 
   return (
     <div style={{
@@ -39,7 +53,7 @@ export default function NavDesktop({ statusCaixa, onSair }: { statusCaixa?: stri
         </Link>
 
         <nav style={{ display: 'flex', gap: 2, flex: 1 }}>
-          {LINKS.map((l) => {
+          {links.map((l) => {
             const ativo = l.href === '/'
               ? pathname === '/'
               : pathname === l.href || pathname.startsWith(l.href + '/')
@@ -58,7 +72,7 @@ export default function NavDesktop({ statusCaixa, onSair }: { statusCaixa?: stri
                   whiteSpace: 'nowrap',
                 }}
               >
-                {l.nome}
+                {l.chave ? t(l.chave) : l.nome}
               </Link>
             )
           })}
@@ -76,6 +90,11 @@ export default function NavDesktop({ statusCaixa, onSair }: { statusCaixa?: stri
               }} />
               {statusCaixa}
             </div>
+          )}
+          {perfil?.nome && (
+            <span style={{ fontSize: 12, color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>
+              {perfil.nome}
+            </span>
           )}
           {onSair && (
             <button

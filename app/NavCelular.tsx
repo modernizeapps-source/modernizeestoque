@@ -2,20 +2,32 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useSessao } from './SessaoProvider'
+import { podeAbrir } from '@/lib/supabase/auth'
+import { useT } from '@/lib/i18n'
 
 // Barra de navegação fixa no rodapé, só no celular. Fica sempre visível
 // durante a rolagem, então dá pra trocar de tela sem voltar ao topo.
 const LINKS = [
-  { href: '/', nome: 'Início', icone: '⌂' },
-  { href: '/venda', nome: 'Venda', icone: '+' },
-  { href: '/produtos', nome: 'Produtos', icone: '▤' },
-  { href: '/caixa', nome: 'Caixa', icone: '▣' },
-  { href: '/relatorios', nome: 'Relatórios', icone: '◈' },
+  { href: '/', chave: 'inicio' as const, icone: '⌂' },
+  { href: '/venda', chave: 'venda' as const, icone: '+' },
+  { href: '/produtos', chave: 'produtos' as const, icone: '▤' },
+  { href: '/caixa', chave: 'caixa' as const, icone: '▣' },
+  { href: '/relatorios', chave: 'relatorios' as const, icone: '◈' },
 ]
 
 export default function NavCelular() {
   const pathname = usePathname()
-  if (pathname === '/login') return null
+  const { perfil } = useSessao()
+  const t = useT()
+
+  if (pathname === '/login' || pathname === '/criar-conta') return null
+
+  // Mesma ideia da barra do computador: sem perfil carregado ainda, mostra só
+  // o básico em vez de sumir com a navegação inteira.
+  const links = LINKS.filter((l) =>
+    perfil ? podeAbrir(perfil.role, l.href) : ['/', '/venda', '/produtos', '/caixa'].includes(l.href)
+  )
 
   return (
     <nav
@@ -29,7 +41,7 @@ export default function NavCelular() {
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       }}
     >
-      {LINKS.map((l) => {
+      {links.map((l) => {
         const ativo = l.href === '/'
           ? pathname === '/'
           : pathname === l.href || pathname.startsWith(l.href + '/')
@@ -45,7 +57,7 @@ export default function NavCelular() {
             }}
           >
             <span style={{ fontSize: 16, lineHeight: 1 }}>{l.icone}</span>
-            <span style={{ fontSize: 9.5, letterSpacing: '0.01em' }}>{l.nome}</span>
+            <span style={{ fontSize: 9.5, letterSpacing: '0.01em' }}>{t(l.chave)}</span>
           </Link>
         )
       })}

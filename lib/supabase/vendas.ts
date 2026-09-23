@@ -28,9 +28,12 @@ export type Pagamento = {
 
 export async function criarVenda(itens: ItemCarrinho[], caixaSessaoId: string): Promise<string> {
   const supabase = createClient()
+  const { data: auth } = await supabase.auth.getUser()
+
   const { data, error } = await supabase.rpc('criar_venda', {
     p_itens: itens,
     p_caixa_sessao_id: caixaSessaoId,
+    p_vendido_por: auth.user?.id ?? null,
   })
   if (error) throw error
   return data as string

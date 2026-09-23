@@ -1,106 +1,114 @@
-# Estoque Mercadinho — Pacote 13: Fase 2 + limpeza do histórico
-
-> Se o deploy anterior falhou com "Expression expected" em app/page.tsx, era um
-> erro meu: ao reordenar os cards da tela inicial do celular, sobrou um
-> `</div>`. Já está corrigido aqui.
+# Estoque Mercadinho — Pacote 14: Fase 3 (perfis e equipe)
 
 O banco já está atualizado. Só subir no GitHub e rodar:
 **Netlify → Deploys → Trigger deploy → Deploy project without cache**
 
 ---
 
-## Histórico apagado ✓
+## Três perfis de acesso (item 7)
 
-Já limpei, conforme você pediu. Foram apagadas 32 vendas, 39 itens, 13
-pagamentos, 3 sessões de caixa e as movimentações ligadas a vendas.
+| | Funcionário | Dono (Misa) | Admin (você) |
+|---|---|---|---|
+| Venda | ✓ | ✓ | ✓ |
+| Caixa | ✓ | ✓ | ✓ |
+| Produtos | só consulta | consulta e edita | consulta e edita |
+| Relatórios | — | ✓ | ✓ |
+| Configurações | — | ✓ | ✓ |
+| Funcionários | — | ✓ | ✓ |
+| Empresas | — | — | ✓ |
 
-**Nada de estoque foi tocado** — os 11 produtos continuam com as quantidades
-que o Misa ajustou na mão. Categorias, maquininhas, usuários e configurações
-também ficaram intactos.
+**A trava é de verdade, não só visual.** Se um funcionário digitar
+/configuracoes na barra de endereço, o sistema o manda de volta pro início. O
+menu também só mostra o que o perfil dele pode abrir.
 
-O relatório e o histórico começam do zero. Como não tem caixa aberto, o Misa
-precisa abrir um antes da primeira venda.
-
----
-
-## Alterar o estoque (o que você pediu hoje)
-
-Na tela do produto, **"Estoque atual" agora é um campo editável normal**, junto
-com nome e preço. Fez a contagem e deu 47 em vez de 50? Apaga, digita 47 e
-salva.
-
-Quando o número muda, aparece um aviso em amarelo mostrando de quanto pra
-quanto vai, e um campo perguntando o motivo (contagem, quebra, perda). O motivo
-fica registrado no histórico de movimentações.
-
-**Isso é diferente de "Chegou mercadoria"**, que continua ali em cima:
-- *Alterar o estoque* = corrigir uma contagem que não bateu
-- *Chegou mercadoria* = entrada de compra, que recalcula o custo médio
+O funcionário também não vê custo nem margem dos produtos — só nome, preço de
+venda e estoque. E a tela inicial dele não mostra faturamento nem lucro.
 
 ---
 
-## Corrigir o valor de abertura do caixa
+## Funcionários (item 15) — nova tela, no menu do dono
 
-Na tela do Caixa, embaixo do saldo esperado, tem o link **"corrigir o valor de
-abertura"**. Digitou 1.600 e era 4.000? Corrige ali, sem precisar fechar e
-reabrir o caixa.
+O Misa cadastra a equipe sozinho, sem depender de você.
 
-Isso não movimenta dinheiro (não vira reforço nem sangria) — só conserta a
-informação. Fica registrado com o valor antigo, o novo, o motivo, quem fez e
-quando. O saldo esperado recalcula sozinho.
+**Como funciona:** ele digita o nome do funcionário e o sistema gera um código
+de 6 letras, tipo `K7P2M9`. Ele passa o código pra pessoa, que entra no site,
+clica em "Criar conta", digita o código e **escolhe a própria senha**.
 
----
+Assim ninguém precisa saber a senha do outro. O código vale 7 dias.
 
-## Ordem dos cards
-
-No computador, os quatro números agora vêm assim:
-
-    Estoque baixo · Vendas hoje · Lucro · Total vendido
-
-Ou seja, o **Total vendido** fica alinhado embaixo do botão "Nova venda", que
-está no canto direito.
+Na tela ele vê quem está na equipe, quantos têm acesso, e pode renomear,
+desativar e reativar. **Desativar não apaga nada** — a pessoa perde o acesso na
+hora, mas as vendas e caixas dela continuam no histórico com o nome dela.
 
 ---
 
-## Confirmação animada ao salvar
+## Troca de turno
 
-A caixa verde de confirmação agora entra com um leve movimento e o símbolo de
-confirmação é **desenhado na tela** em meio segundo, em vez de ser só um ✓ de
-texto. Vale em Configurações, Produtos e Categorias.
+Na tela inicial do funcionário aparece bem grande **quem está operando**, com um
+botão "Trocar usuário" do lado. Na troca de turno, o próximo entra com a conta
+dele ali mesmo, sem sair da tela.
 
-Quem tiver "reduzir movimento" ligado no sistema não vê animação.
-
----
-
-## Menu de navegação fixo
-
-**No celular:** barra nova fixa no rodapé, sempre visível durante a rolagem —
-Início, Venda, Produtos, Caixa, Relatórios. O conteúdo ganhou um respiro
-embaixo pra ela não cobrir botões.
-
-**No computador:** a barra do topo agora gruda no topo ao rolar a página.
+Toda venda e toda abertura de caixa ficam registradas no nome de quem estava
+logado.
 
 ---
 
-## Como testar
+## Histórico de caixa por funcionário (item 5)
 
-1. **Produtos** → abre um produto, muda o estoque, preenche o motivo e salva
-2. **Caixa** → abre um caixa com um valor qualquer, depois usa "corrigir o
-   valor de abertura" e confere se o saldo esperado mudou
-3. **Início (computador)** → confere a ordem nova dos cards
-4. **Configurações** → salva algo e olha a animação de confirmação
-5. **No celular** → rola qualquer tela e confere a barra do rodapé
-6. **Histórico e Relatórios** → devem estar zerados
+Agora fica **dentro da própria tela de Caixa**, no botão "Histórico" — não é
+mais outra aba nem outro item no menu.
+
+Cada turno mostra quem abriu, os horários, o valor inicial, o esperado, o
+contado e se bateu, sobrou ou faltou. Tocando no turno, abre a lista de vendas
+daquele caixa com hora, quem vendeu e a forma de pagamento.
+
+Tem o filtro **"Só dinheiro"**: mostra apenas as vendas que afetam a gaveta e
+soma o total recebido em espécie. Em venda dividida, conta só a parte que foi
+em dinheiro — Pix e cartão aparecem na conferência mas não entram nessa soma.
+
+Se houver mais de uma pessoa, aparecem botões pra filtrar por funcionário.
 
 ---
 
-## Ainda pendente (Fase 3)
+## Espanhol (item 8)
 
-Os itens grandes, que dependem uns dos outros:
-- Três perfis de acesso: funcionário, dono, administrador (item 7)
-- Dono gerenciar seus funcionários (item 15)
-- Histórico de caixa por funcionário, dentro da própria tela de Caixa (item 5)
-- Opção de espanhol pro funcionário (item 8)
+Só o funcionário vê o seletor, ao lado do nome dele na tela inicial:
+`Português` `Español`.
 
-Quando for fazer essa fase, a barra do celular passa a mostrar só as telas
-que cada perfil pode acessar.
+A escolha vale só pra conta dele — não muda nada pros outros. Traduz as telas
+que ele usa (venda, caixa, produtos, navegação). **Nomes de produtos e
+categorias nunca são traduzidos**, porque são dados da loja.
+
+---
+
+## Adicionar categoria no cadastro do produto
+
+Ao escolher a categoria de um produto, agora tem o botão **"+ Adicionar
+categoria"** sempre visível no topo da lista. Antes só aparecia se você digitasse
+um nome inexistente — tinha que adivinhar.
+
+---
+
+## Primeiro teste, na ordem
+
+1. **Entre como o Misa** (maresiaconveniencia23@gmail.com)
+2. Vá em **Funcionários** e cadastre alguém de teste
+3. Copie o código gerado
+4. **Abra outra janela** (anônima, pra não deslogar), vá no site, clique em
+   "Criar conta", use o código e crie uma senha
+5. Veja que essa conta cai numa tela simples: só Nova venda, Caixa e Produtos
+6. Tente abrir **/configuracoes** na barra de endereço — deve voltar pro início
+7. Faça uma venda por essa conta
+8. Volte na conta do Misa → **Caixa → Histórico** → o turno deve mostrar o nome
+   de quem operou e a venda dele
+9. Na conta do funcionário, troque pra **Español** e confira as telas
+
+---
+
+## Uma observação
+
+O Misa é `owner` e você é `admin`. Como as duas contas já existiam antes desse
+pacote, elas continuam funcionando igual — só ganharam os poderes novos.
+
+O login antigo (gmotamaia) continua sem perfil, então não vai conseguir entrar
+em lugar nenhum. Use o modernizeapps.
