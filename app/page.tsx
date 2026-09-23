@@ -180,7 +180,6 @@ export default function HomePage() {
               <div className="mono" style={{ fontSize: 20, fontWeight: 500, marginTop: 6, color: 'var(--cyan)' }}>{reais(resumo.totalVendido)}</div>
             </div>
           </div>
-          </div>
 
           {resumo.formasPagamento.length > 0 && (
             <div style={{ marginBottom: 20 }}>

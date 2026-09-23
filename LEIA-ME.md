@@ -1,5 +1,9 @@
 # Estoque Mercadinho — Pacote 13: Fase 2 + limpeza do histórico
 
+> Se o deploy anterior falhou com "Expression expected" em app/page.tsx, era um
+> erro meu: ao reordenar os cards da tela inicial do celular, sobrou um
+> `</div>`. Já está corrigido aqui.
+
 O banco já está atualizado. Só subir no GitHub e rodar:
 **Netlify → Deploys → Trigger deploy → Deploy project without cache**
 
