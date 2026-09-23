@@ -154,21 +154,6 @@ export default function HomePage() {
         <>
           <p className="subtitle" style={{ marginBottom: 8 }}>Hoje</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
-            <div className="card card-accent">
-              <div className="mono" style={{ fontSize: 10, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Total vendido</div>
-              <div className="mono" style={{ fontSize: 20, fontWeight: 500, marginTop: 6, color: 'var(--cyan)' }}>{reais(resumo.totalVendido)}</div>
-            </div>
-            <div className="card card-accent">
-              <div className="mono" style={{ fontSize: 10, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Lucro</div>
-              <div className="mono" style={{ fontSize: 20, fontWeight: 500, marginTop: 6, color: 'var(--green)' }}>{reais(resumo.lucro)}</div>
-            </div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
-            <div className="card">
-              <div className="mono" style={{ fontSize: 10, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Vendas hoje</div>
-              <div style={{ fontSize: 18, fontWeight: 600, marginTop: 6 }}>{resumo.numVendas}</div>
-            </div>
             <Link
               href="/produtos"
               className="card"
@@ -180,6 +165,21 @@ export default function HomePage() {
               <div className="mono" style={{ fontSize: 10, textTransform: 'uppercase', color: resumo.produtosEstoqueBaixo > 0 ? 'var(--amber)' : 'var(--text-dim)' }}>Estoque baixo</div>
               <div style={{ fontSize: 18, fontWeight: 600, marginTop: 6, color: resumo.produtosEstoqueBaixo > 0 ? 'var(--amber)' : 'var(--text)' }}>{resumo.produtosEstoqueBaixo}</div>
             </Link>
+            <div className="card">
+              <div className="mono" style={{ fontSize: 10, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Vendas hoje</div>
+              <div style={{ fontSize: 18, fontWeight: 600, marginTop: 6 }}>{resumo.numVendas}</div>
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
+            <div className="card card-accent">
+              <div className="mono" style={{ fontSize: 10, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Lucro</div>
+              <div className="mono" style={{ fontSize: 20, fontWeight: 500, marginTop: 6, color: 'var(--green)' }}>{reais(resumo.lucro)}</div>
+            </div>
+            <div className="card card-accent">
+              <div className="mono" style={{ fontSize: 10, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Total vendido</div>
+              <div className="mono" style={{ fontSize: 20, fontWeight: 500, marginTop: 6, color: 'var(--cyan)' }}>{reais(resumo.totalVendido)}</div>
+            </div>
+          </div>
           </div>
 
           {resumo.formasPagamento.length > 0 && (

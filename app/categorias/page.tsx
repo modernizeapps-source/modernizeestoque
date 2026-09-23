@@ -9,6 +9,7 @@ import {
 import { primeiraMaiuscula } from '@/lib/supabase/produtos'
 import { useIsDesktop } from '@/lib/useIsDesktop'
 import NavDesktop from '../NavDesktop'
+import CheckConfirmacao from '../CheckConfirmacao'
 
 export default function CategoriasPage() {
   const isDesktop = useIsDesktop()
@@ -140,7 +141,12 @@ export default function CategoriasPage() {
       </p>
 
       {erro && <p className="error-text" style={{ marginBottom: 12 }}>{erro}</p>}
-      {aviso && <div className="success-box" style={{ marginBottom: 12 }}>✓ {aviso}</div>}
+      {aviso && (
+        <div className="success-box" style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 9 }}>
+          <CheckConfirmacao />
+          <span>{aviso}</span>
+        </div>
+      )}
 
       {/* Nova categoria */}
       <form onSubmit={handleCriar} style={{ display: 'flex', gap: 9, marginBottom: 22 }}>

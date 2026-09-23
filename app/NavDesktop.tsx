@@ -20,7 +20,7 @@ export default function NavDesktop({ statusCaixa, onSair }: { statusCaixa?: stri
 
   return (
     <div style={{
-      position: 'relative', zIndex: 2,
+      position: 'sticky', top: 0, zIndex: 20,
       borderBottom: '1px solid var(--line)',
       background: 'rgba(6,10,16,0.82)',
       backdropFilter: 'blur(12px)',

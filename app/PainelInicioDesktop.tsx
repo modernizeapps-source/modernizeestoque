@@ -67,37 +67,10 @@ export default function PainelInicioDesktop({ resumo, painel }: { resumo: Resumo
         </Link>
       </div>
 
-      {/* ——— Os quatro números do dia ——— */}
+      {/* ——— Os quatro números do dia ———
+           Ordem pensada pra que "Total vendido" fique alinhado embaixo do
+           botão Nova venda, que fica no canto direito do cabeçalho. ——— */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12, marginBottom: 16 }}>
-        <div className="card card-accent" style={{ padding: 17 }}>
-          <div className="mono" style={{ fontSize: 9.5, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Total vendido</div>
-          <div className="mono" style={{ fontSize: 25, fontWeight: 500, marginTop: 7, color: 'var(--cyan)' }}>{reais(resumo.totalVendido)}</div>
-          {painel?.variacaoVsOntem != null && (
-            <div style={{ fontSize: 10.5, marginTop: 4, color: painel.variacaoVsOntem >= 0 ? 'var(--green)' : 'var(--red)' }}>
-              {painel.variacaoVsOntem >= 0 ? '↑' : '↓'} {Math.abs(painel.variacaoVsOntem).toFixed(0)}% vs ontem
-            </div>
-          )}
-          {painel?.variacaoVsOntem == null && (
-            <div style={{ fontSize: 10.5, marginTop: 4, color: 'var(--text-dim)' }}>sem venda ontem</div>
-          )}
-        </div>
-
-        <div className="card card-accent" style={{ padding: 17 }}>
-          <div className="mono" style={{ fontSize: 9.5, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Lucro</div>
-          <div className="mono" style={{ fontSize: 25, fontWeight: 500, marginTop: 7, color: 'var(--green)' }}>{reais(resumo.lucro)}</div>
-          <div style={{ fontSize: 10.5, marginTop: 4, color: 'var(--text-dim)' }}>
-            {painel && painel.taxasTotal > 0 ? `já sem ${reais(painel.taxasTotal)} de taxas` : 'sem taxas no período'}
-          </div>
-        </div>
-
-        <div className="card" style={{ padding: 17 }}>
-          <div className="mono" style={{ fontSize: 9.5, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Vendas hoje</div>
-          <div className="mono" style={{ fontSize: 25, fontWeight: 500, marginTop: 7 }}>{resumo.numVendas}</div>
-          <div style={{ fontSize: 10.5, marginTop: 4, color: 'var(--text-dim)' }}>
-            {painel && painel.ticketMedio > 0 ? `ticket médio ${reais(painel.ticketMedio)}` : '—'}
-          </div>
-        </div>
-
         <Link
           href="/produtos"
           className="card card-clicavel"
@@ -120,6 +93,35 @@ export default function PainelInicioDesktop({ resumo, painel }: { resumo: Resumo
           </div>
           <div style={{ fontSize: 10.5, marginTop: 4, color: 'var(--text-dim)' }}>ver produtos →</div>
         </Link>
+
+        <div className="card" style={{ padding: 17 }}>
+          <div className="mono" style={{ fontSize: 9.5, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Vendas hoje</div>
+          <div className="mono" style={{ fontSize: 25, fontWeight: 500, marginTop: 7 }}>{resumo.numVendas}</div>
+          <div style={{ fontSize: 10.5, marginTop: 4, color: 'var(--text-dim)' }}>
+            {painel && painel.ticketMedio > 0 ? `ticket médio ${reais(painel.ticketMedio)}` : '—'}
+          </div>
+        </div>
+
+        <div className="card card-accent" style={{ padding: 17 }}>
+          <div className="mono" style={{ fontSize: 9.5, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Lucro</div>
+          <div className="mono" style={{ fontSize: 25, fontWeight: 500, marginTop: 7, color: 'var(--green)' }}>{reais(resumo.lucro)}</div>
+          <div style={{ fontSize: 10.5, marginTop: 4, color: 'var(--text-dim)' }}>
+            {painel && painel.taxasTotal > 0 ? `já sem ${reais(painel.taxasTotal)} de taxas` : 'sem taxas no período'}
+          </div>
+        </div>
+
+        <div className="card card-accent" style={{ padding: 17 }}>
+          <div className="mono" style={{ fontSize: 9.5, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Total vendido</div>
+          <div className="mono" style={{ fontSize: 25, fontWeight: 500, marginTop: 7, color: 'var(--cyan)' }}>{reais(resumo.totalVendido)}</div>
+          {painel?.variacaoVsOntem != null && (
+            <div style={{ fontSize: 10.5, marginTop: 4, color: painel.variacaoVsOntem >= 0 ? 'var(--green)' : 'var(--red)' }}>
+              {painel.variacaoVsOntem >= 0 ? '↑' : '↓'} {Math.abs(painel.variacaoVsOntem).toFixed(0)}% vs ontem
+            </div>
+          )}
+          {painel?.variacaoVsOntem == null && (
+            <div style={{ fontSize: 10.5, marginTop: 4, color: 'var(--text-dim)' }}>sem venda ontem</div>
+          )}
+        </div>
       </div>
 
       {/* ——— Duas colunas ——— */}

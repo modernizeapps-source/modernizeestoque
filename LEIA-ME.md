@@ -1,93 +1,102 @@
-# Estoque Mercadinho — Pacote 12: Fase 1 das melhorias
+# Estoque Mercadinho — Pacote 13: Fase 2 + limpeza do histórico
 
-O banco já foi atualizado. Só subir no GitHub e rodar:
+O banco já está atualizado. Só subir no GitHub e rodar:
 **Netlify → Deploys → Trigger deploy → Deploy project without cache**
 
 ---
 
-## O bug das vendas "aguardando pagamento" (item 12)
+## Histórico apagado ✓
 
-Investiguei: eram **cinco** vendas travadas, não uma. Todas sem pagamento
-nenhum e sem baixa de estoque.
+Já limpei, conforme você pediu. Foram apagadas 32 vendas, 39 itens, 13
+pagamentos, 3 sessões de caixa e as movimentações ligadas a vendas.
 
-**A causa:** o sistema criava a venda no banco assim que você clicava em
-"Finalizar venda", *antes* de receber o pagamento. Isso era herança do Pix
-automático, que precisava da venda existindo pra gerar a cobrança. Se o
-atendente desistisse, fechasse a aba, ou o sistema voltasse pro início por
-inatividade, a venda ficava pendurada pra sempre.
+**Nada de estoque foi tocado** — os 11 produtos continuam com as quantidades
+que o Misa ajustou na mão. Categorias, maquininhas, usuários e configurações
+também ficaram intactos.
 
-**A correção:** agora a venda só é criada quando o primeiro pagamento é
-confirmado. Não tem mais como ficar pendurada.
-
-As cinco travadas ainda estão lá — vou limpar junto com os dados de teste,
-como combinamos, pra você acompanhar.
+O relatório e o histórico começam do zero. Como não tem caixa aberto, o Misa
+precisa abrir um antes da primeira venda.
 
 ---
 
-## O que mais mudou
+## Alterar o estoque (o que você pediu hoje)
 
-**Produtos**
-- Ao salvar uma edição, volta pra lista com "Produto atualizado com sucesso"
-  (item 1). Se der erro, fica na tela com tudo preenchido.
-- Botão **Excluir produto** na tela de edição, com confirmação (item 2).
-  Produtos já vendidos não podem ser excluídos — o histórico precisa deles, e o
-  sistema avisa isso.
-- **Correção manual removida** da tela de produto (item 14).
-- **"Salvar e cadastrar próximo"** no cadastro: salva, limpa o formulário e já
-  põe o cursor no nome, pra cadastrar vários seguidos. O botão "Salvar e
-  finalizar" volta pra lista (item 9).
-- **Primeira letra maiúscula** automática no nome (item 17).
-- **Estoque mínimo e atual** agora aceitam digitar, apagar e substituir direto,
-  sem depender das setinhas (item 18).
+Na tela do produto, **"Estoque atual" agora é um campo editável normal**, junto
+com nome e preço. Fez a contagem e deu 47 em vez de 50? Apaga, digita 47 e
+salva.
 
-**Categorias** (item 6) — tela nova, no botão "Categorias" dentro de Produtos
-- Criar, renomear e excluir.
-- Renomear reflete em todos os produtos automaticamente.
-- Ao excluir uma categoria com produtos, você escolhe pra onde eles vão (outra
-  categoria ou sem categoria). Os produtos nunca são apagados.
-- Campo **unidades por fardo**: preencha na Cerveja com 24 (ou o que for), e o
-  aviso de reposição passa a vir em fardos.
+Quando o número muda, aparece um aviso em amarelo mostrando de quanto pra
+quanto vai, e um campo perguntando o motivo (contagem, quebra, perda). O motivo
+fica registrado no histórico de movimentações.
 
-**Card "Precisa repor"** (item 18)
-Agora mostra o estoque atual, o mínimo e quanto falta. Para categorias com
-fardo configurado, mostra assim:
-
-    Cerveja Skol            repor 1 fardo + 5 un
-    tem 21 · mínimo 50
-
-Produtos de categorias sem fardo continuam em unidades.
-
-**Bipar em qualquer tela** (item 16)
-Leu um código de barras estando em qualquer página? O sistema abre a Venda e já
-põe o produto no carrinho. Se o produto já estiver no carrinho, aumenta a
-quantidade. Código não cadastrado mostra o aviso com o atalho pra cadastrar.
-
-**Botão Voltar** (item 11)
-No histórico de caixa e no detalhe da venda, o botão "Voltar" agora aparece
-também no computador.
-
-**Tela inicial no celular** (item 13)
-O botão "Nova venda" subiu pro topo, logo abaixo do título. Os cards vêm
-depois, na ordem: Total vendido → Lucro → Vendas hoje → Estoque baixo. Os
-outros atalhos ficaram no rodapé da tela.
+**Isso é diferente de "Chegou mercadoria"**, que continua ali em cima:
+- *Alterar o estoque* = corrigir uma contagem que não bateu
+- *Chegou mercadoria* = entrada de compra, que recalcula o custo médio
 
 ---
 
-## O que ficou pra depois
+## Corrigir o valor de abertura do caixa
 
-**Fase 2:** corrigir o valor inicial do caixa (item 10), confirmação animada em
-Configurações (item 4), menu fixo no rodapé (item 3).
+Na tela do Caixa, embaixo do saldo esperado, tem o link **"corrigir o valor de
+abertura"**. Digitou 1.600 e era 4.000? Corrige ali, sem precisar fechar e
+reabrir o caixa.
 
-**Fase 3 (a grande):** três perfis de acesso (item 7), gerenciar funcionários
-(item 15), histórico de caixa por funcionário (item 5), espanhol (item 8).
-
-**Limpeza dos dados de teste:** vou fazer com você acompanhando, mostrando o
-que vai sair antes de apagar.
+Isso não movimenta dinheiro (não vira reforço nem sangria) — só conserta a
+informação. Fica registrado com o valor antigo, o novo, o motivo, quem fez e
+quando. O saldo esperado recalcula sozinho.
 
 ---
 
-## Uma observação sobre o item 13
+## Ordem dos cards
 
-Você escreveu "Lucro bruto". Mantive só "Lucro" porque esse número já desconta
-as taxas de maquininha — chamar de bruto daria a entender que não desconta. Se
-preferir outro nome, é só falar.
+No computador, os quatro números agora vêm assim:
+
+    Estoque baixo · Vendas hoje · Lucro · Total vendido
+
+Ou seja, o **Total vendido** fica alinhado embaixo do botão "Nova venda", que
+está no canto direito.
+
+---
+
+## Confirmação animada ao salvar
+
+A caixa verde de confirmação agora entra com um leve movimento e o símbolo de
+confirmação é **desenhado na tela** em meio segundo, em vez de ser só um ✓ de
+texto. Vale em Configurações, Produtos e Categorias.
+
+Quem tiver "reduzir movimento" ligado no sistema não vê animação.
+
+---
+
+## Menu de navegação fixo
+
+**No celular:** barra nova fixa no rodapé, sempre visível durante a rolagem —
+Início, Venda, Produtos, Caixa, Relatórios. O conteúdo ganhou um respiro
+embaixo pra ela não cobrir botões.
+
+**No computador:** a barra do topo agora gruda no topo ao rolar a página.
+
+---
+
+## Como testar
+
+1. **Produtos** → abre um produto, muda o estoque, preenche o motivo e salva
+2. **Caixa** → abre um caixa com um valor qualquer, depois usa "corrigir o
+   valor de abertura" e confere se o saldo esperado mudou
+3. **Início (computador)** → confere a ordem nova dos cards
+4. **Configurações** → salva algo e olha a animação de confirmação
+5. **No celular** → rola qualquer tela e confere a barra do rodapé
+6. **Histórico e Relatórios** → devem estar zerados
+
+---
+
+## Ainda pendente (Fase 3)
+
+Os itens grandes, que dependem uns dos outros:
+- Três perfis de acesso: funcionário, dono, administrador (item 7)
+- Dono gerenciar seus funcionários (item 15)
+- Histórico de caixa por funcionário, dentro da própria tela de Caixa (item 5)
+- Opção de espanhol pro funcionário (item 8)
+
+Quando for fazer essa fase, a barra do celular passa a mostrar só as telas
+que cada perfil pode acessar.

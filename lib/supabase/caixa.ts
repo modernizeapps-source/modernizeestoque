@@ -109,3 +109,42 @@ export async function totaisPorFormaDoCaixa(caixaSessaoId: string): Promise<Reco
   }
   return totais
 }
+
+export type CorrecaoCaixa = {
+  id: string
+  valor_anterior: number
+  valor_novo: number
+  motivo: string | null
+  criado_em: string
+}
+
+// Corrige o valor digitado errado na abertura do caixa. Não é movimentação de
+// dinheiro — é conserto de informação, então não vira reforço nem sangria.
+// A alteração fica registrada com valor antigo, novo, motivo e quem fez.
+export async function corrigirValorInicialCaixa(
+  caixaSessaoId: string,
+  valorNovo: number,
+  motivo: string
+): Promise<void> {
+  const supabase = createClient()
+  const { data: auth } = await supabase.auth.getUser()
+
+  const { error } = await supabase.rpc('corrigir_valor_inicial_caixa', {
+    p_caixa_sessao_id: caixaSessaoId,
+    p_valor_novo: valorNovo,
+    p_motivo: motivo || null,
+    p_corrigido_por: auth.user?.id ?? null,
+  })
+  if (error) throw error
+}
+
+export async function listarCorrecoesCaixa(caixaSessaoId: string): Promise<CorrecaoCaixa[]> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('caixa_correcoes')
+    .select('id, valor_anterior, valor_novo, motivo, criado_em')
+    .eq('caixa_sessao_id', caixaSessaoId)
+    .order('criado_em', { ascending: false })
+  if (error) throw error
+  return (data as any) ?? []
+}

@@ -6,6 +6,7 @@ import { Produto, listarProdutos, margemLucro } from '@/lib/supabase/produtos'
 import { useSearchParams } from 'next/navigation'
 import { useIsDesktop } from '@/lib/useIsDesktop'
 import NavDesktop from '../NavDesktop'
+import CheckConfirmacao from '../CheckConfirmacao'
 import { Categoria, listarCategorias } from '@/lib/supabase/categorias'
 
 function reais(v: number) {
@@ -63,6 +64,13 @@ function ProdutosConteudo() {
           <Link href="/produtos/novo" className="btn-primary" style={{ padding: '8px 14px', fontSize: 13 }}>+ Novo produto</Link>
         </div>
       </div>
+
+      {aviso && (
+        <div className="success-box" style={{ marginBottom: 14, display: 'flex', alignItems: 'center', gap: 9 }}>
+          <CheckConfirmacao />
+          <span>{aviso}</span>
+        </div>
+      )}
 
       {!carregando && !erro && produtos.length > 0 && (
         <>

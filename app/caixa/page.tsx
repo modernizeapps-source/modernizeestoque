@@ -11,6 +11,7 @@ import {
   totaisPorFormaDoCaixa,
   CaixaSessao,
   CaixaMovimento,
+  corrigirValorInicialCaixa,
 } from '@/lib/supabase/caixa'
 import { FORMA_PAGAMENTO_LABEL } from '@/lib/supabase/historico'
 import { useIsDesktop } from '@/lib/useIsDesktop'
@@ -40,6 +41,10 @@ export default function CaixaPage() {
 
   // fechar caixa
   const [mostrarFechamento, setMostrarFechamento] = useState(false)
+  const [corrigindoInicial, setCorrigindoInicial] = useState(false)
+  const [novoInicial, setNovoInicial] = useState('')
+  const [motivoCorrecao, setMotivoCorrecao] = useState('')
+  const [salvandoCorrecao, setSalvandoCorrecao] = useState(false)
   const [valorContado, setValorContado] = useState('')
   const [observacaoFechamento, setObservacaoFechamento] = useState('')
   const [fechando, setFechando] = useState(false)
@@ -95,6 +100,28 @@ export default function CaixaPage() {
       setErro(e?.message ?? 'Não foi possível registrar.')
     } finally {
       setSalvandoMovimento(false)
+    }
+  }
+
+  async function handleCorrigirInicial(e: React.FormEvent) {
+    e.preventDefault()
+    if (!caixa) return
+    const valor = parseFloat(novoInicial.replace(',', '.') || '0')
+    if (isNaN(valor) || valor < 0) {
+      setErro('Digite um valor válido.')
+      return
+    }
+    setSalvandoCorrecao(true)
+    setErro(null)
+    try {
+      await corrigirValorInicialCaixa(caixa.id, valor, motivoCorrecao.trim())
+      setCorrigindoInicial(false)
+      setMotivoCorrecao('')
+      await carregar()
+    } catch (e: any) {
+      setErro(e?.message ?? 'Não foi possível corrigir o valor.')
+    } finally {
+      setSalvandoCorrecao(false)
     }
   }
 
@@ -161,6 +188,48 @@ export default function CaixaPage() {
             <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 8 }}>
               Inicial {reais(Number(caixa.valor_inicial))} · Vendas dinheiro {reais(totalDinheiroVendas)} · Reforços {reais(totalReforcos)} · Sangrias {reais(totalSangrias)}
             </div>
+
+            {!corrigindoInicial ? (
+              <button
+                onClick={() => { setCorrigindoInicial(true); setNovoInicial(String(caixa.valor_inicial)) }}
+                style={{
+                  border: 'none', background: 'none', color: 'var(--cyan)', fontSize: 11.5,
+                  cursor: 'pointer', padding: 0, marginTop: 10, textDecoration: 'underline',
+                }}
+              >
+                corrigir o valor de abertura
+              </button>
+            ) : (
+              <form onSubmit={handleCorrigirInicial} style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--line)' }}>
+                <p style={{ fontSize: 11.5, color: 'var(--text-dim)', marginBottom: 10, lineHeight: 1.5 }}>
+                  Use quando o valor de abertura foi digitado errado. Isso não movimenta dinheiro —
+                  só conserta a informação. Fica registrado no histórico.
+                </p>
+                <label className="label">Valor correto de abertura</label>
+                <input
+                  type="number" step="0.01" min="0"
+                  value={novoInicial}
+                  onChange={(e) => setNovoInicial(e.target.value)}
+                  className="input"
+                  style={{ marginBottom: 10 }}
+                  autoFocus
+                />
+                <label className="label">Motivo (opcional)</label>
+                <input
+                  value={motivoCorrecao}
+                  onChange={(e) => setMotivoCorrecao(e.target.value)}
+                  placeholder="Ex: digitei 1600 mas era 4000"
+                  className="input"
+                  style={{ marginBottom: 12 }}
+                />
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button type="button" onClick={() => setCorrigindoInicial(false)} className="btn-secondary" style={{ flex: 1, padding: 10 }}>Cancelar</button>
+                  <button type="submit" disabled={salvandoCorrecao} className="btn-primary" style={{ flex: 1, padding: 10 }}>
+                    {salvandoCorrecao ? 'Salvando...' : 'Corrigir'}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
 
           {Object.keys(totais).length > 0 && (

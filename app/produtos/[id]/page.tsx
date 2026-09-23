@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { Categoria, listarCategorias } from '@/lib/supabase/categorias'
 import {
   Produto, buscarProduto, atualizarProduto, excluirProduto,
-  registrarEntradaMercadoria, margemLucro, primeiraMaiuscula,
+  registrarEntradaMercadoria, ajustarEstoque, margemLucro, primeiraMaiuscula,
 } from '@/lib/supabase/produtos'
 import { useLeitorCodigoBarras } from '@/lib/useLeitorCodigoBarras'
 import CategoriaPicker from '../CategoriaPicker'
@@ -35,6 +35,8 @@ export default function EditarProdutoPage() {
   const [codigoBarras, setCodigoBarras] = useState('')
   const [precoVenda, setPrecoVenda] = useState('')
   const [estoqueMinimo, setEstoqueMinimo] = useState('')
+  const [estoqueAtual, setEstoqueAtual] = useState('')
+  const [motivoEstoque, setMotivoEstoque] = useState('')
   const [salvando, setSalvando] = useState(false)
   const [excluindo, setExcluindo] = useState(false)
 
@@ -43,8 +45,6 @@ export default function EditarProdutoPage() {
   const [qtdChegou, setQtdChegou] = useState('')
   const [custoChegou, setCustoChegou] = useState('')
   const [salvandoEntrada, setSalvandoEntrada] = useState(false)
-
-  // correções manuais
 
   async function carregar() {
     try {
@@ -57,6 +57,8 @@ export default function EditarProdutoPage() {
       setCodigoBarras(p.codigo_barras ?? '')
       setPrecoVenda(String(p.preco_venda))
       setEstoqueMinimo(String(p.estoque_minimo))
+      setEstoqueAtual(String(p.estoque_atual))
+      setMotivoEstoque('')
     } catch (e) {
       setErro('Não foi possível carregar o produto.')
     } finally {
@@ -80,8 +82,20 @@ export default function EditarProdutoPage() {
     if (!categoriaId) return setErro('Selecione uma categoria.')
     if (!precoVenda) return setErro('Digite o preço de venda.')
 
+    // Mudar o número do estoque é corrigir uma contagem, então pede o motivo —
+    // fica no histórico de movimentações, separado de "chegou mercadoria".
+    const novoEstoque = parseInt(estoqueAtual || '0', 10)
+    const estoqueMudou = produto != null && novoEstoque !== produto.estoque_atual
+    if (estoqueMudou && !motivoEstoque.trim()) {
+      return setErro('Diga o motivo da mudança de estoque (ex: contagem de prateleira, quebra).')
+    }
+
     setSalvando(true)
     try {
+      if (estoqueMudou) {
+        await ajustarEstoque(id, novoEstoque, motivoEstoque.trim())
+      }
+
       await atualizarProduto(id, {
         nome: nome.trim(),
         categoria_id: categoriaId,
@@ -250,8 +264,14 @@ export default function EditarProdutoPage() {
 
         <div style={{ display: 'flex', gap: 12 }}>
           <div style={{ flex: 1 }}>
-            <label className="label">Preço de venda</label>
-            <input type="number" step="0.01" value={precoVenda} onChange={(e) => setPrecoVenda(e.target.value)} className="input" />
+            <label className="label">Estoque atual</label>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={estoqueAtual}
+              onChange={(e) => setEstoqueAtual(e.target.value.replace(/[^0-9]/g, ''))}
+              className="input"
+            />
           </div>
           <div style={{ flex: 1 }}>
             <label className="label">Estoque mínimo</label>
@@ -264,6 +284,34 @@ export default function EditarProdutoPage() {
             />
           </div>
         </div>
+
+        <div>
+          <label className="label">Preço de venda</label>
+          <input type="number" step="0.01" value={precoVenda} onChange={(e) => setPrecoVenda(e.target.value)} className="input" />
+        </div>
+
+        {estoqueAtual !== '' && produto && parseInt(estoqueAtual, 10) !== produto.estoque_atual && (
+          <div style={{
+            background: 'rgba(255,180,84,0.08)', border: '1px solid rgba(255,180,84,0.25)',
+            borderRadius: 10, padding: '10px 13px', fontSize: 12, color: 'var(--amber)', lineHeight: 1.5,
+          }}>
+            O estoque vai de <span className="mono">{produto.estoque_atual}</span> para{' '}
+            <span className="mono">{estoqueAtual}</span> ao salvar. Isso é uma correção de contagem —
+            pra mercadoria que chegou, use "Chegou mercadoria" acima, que recalcula o custo.
+          </div>
+        )}
+
+        {estoqueAtual !== '' && produto && parseInt(estoqueAtual, 10) !== produto.estoque_atual && (
+          <div>
+            <label className="label">Por que o estoque mudou?</label>
+            <input
+              value={motivoEstoque}
+              onChange={(e) => setMotivoEstoque(e.target.value)}
+              placeholder="Ex: contagem de prateleira, quebra, perda"
+              className="input"
+            />
+          </div>
+        )}
 
         <button type="submit" disabled={salvando} className="btn-primary" style={{ width: '100%', padding: 13 }}>
           {salvando ? 'Salvando...' : 'Salvar alterações'}

@@ -9,6 +9,7 @@ import {
 } from '@/lib/supabase/configuracoes'
 import { useIsDesktop } from '@/lib/useIsDesktop'
 import NavDesktop from '../NavDesktop'
+import CheckConfirmacao from '../CheckConfirmacao'
 
 export default function ConfiguracoesPage() {
   const isDesktop = useIsDesktop()
@@ -155,7 +156,12 @@ export default function ConfiguracoesPage() {
       <h1 className="titulo-pagina" style={{ fontSize: 20, fontWeight: 500, marginBottom: 6 }}>Configurações</h1>
 
       {erro && <p className="error-text" style={{ marginTop: 12 }}>{erro}</p>}
-      {sucesso && <div className="success-box" style={{ marginTop: 12 }}>✓ {sucesso}</div>}
+      {sucesso && (
+        <div className="success-box" style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 9 }}>
+          <CheckConfirmacao />
+          <span>{sucesso}</span>
+        </div>
+      )}
 
       {/* Maquininhas */}
       <p className="section-title">Maquininhas de cartão</p>

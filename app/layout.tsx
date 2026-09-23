@@ -1,6 +1,7 @@
 import './globals.css'
 import VigiaInatividade from './VigiaInatividade'
 import LeitorGlobal from './LeitorGlobal'
+import BarraNavegacao from './BarraNavegacao'
 
 export const metadata = {
   title: 'Estoque Mercadinho',
@@ -27,6 +28,7 @@ export default function RootLayout({
         <VigiaInatividade />
         <LeitorGlobal />
         {children}
+        <BarraNavegacao />
       </body>
     </html>
   )

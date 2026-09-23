@@ -158,6 +158,63 @@ button { font-family: inherit; }
   padding: 10px;
   border-radius: 10px;
   font-size: 14px;
+  animation: confirmar-entrada .32s cubic-bezier(.16,1,.3,1);
+}
+
+/* A confirmação entra com um leve empurrãozinho e um brilho que se apaga,
+   pra deixar claro que a ação foi concluída sem precisar ler nada. */
+@keyframes confirmar-entrada {
+  0% {
+    opacity: 0;
+    transform: translateY(-6px) scale(.97);
+    box-shadow: 0 0 0 0 rgba(95, 255, 176, 0);
+  }
+  55% {
+    opacity: 1;
+    transform: translateY(0) scale(1.012);
+    box-shadow: 0 0 22px -4px rgba(95, 255, 176, .45);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    box-shadow: 0 0 0 0 rgba(95, 255, 176, 0);
+  }
+}
+
+/* O símbolo de confirmação é desenhado, não é texto: risca o "V" em meio
+   segundo, o que dá a sensação de algo sendo concluído na hora. */
+.check-animado {
+  width: 17px;
+  height: 17px;
+  flex: none;
+}
+.check-animado circle {
+  stroke: var(--green);
+  stroke-width: 2;
+  fill: none;
+  stroke-dasharray: 76;
+  stroke-dashoffset: 76;
+  animation: risca-check .42s .04s cubic-bezier(.65,0,.35,1) forwards;
+}
+.check-animado path {
+  stroke: var(--green);
+  stroke-width: 2.4;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 22;
+  stroke-dashoffset: 22;
+  animation: risca-check .28s .34s cubic-bezier(.65,0,.35,1) forwards;
+}
+@keyframes risca-check {
+  to { stroke-dashoffset: 0; }
+}
+
+/* Quem prefere menos movimento não vê animação nenhuma */
+@media (prefers-reduced-motion: reduce) {
+  .success-box { animation: none; }
+  .check-animado circle,
+  .check-animado path { animation: none; stroke-dashoffset: 0; }
 }
 
 .label {
@@ -168,6 +225,14 @@ button { font-family: inherit; }
   color: var(--text-dim);
   text-transform: uppercase;
   margin-bottom: 7px;
+}
+
+/* A barra de navegação do celular é fixa no rodapé, então o conteúdo
+   precisa de um respiro embaixo pra ela não cobrir botões. */
+@media (max-width: 1023px) {
+  .container {
+    padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
+  }
 }
 
 /* ============================================================
