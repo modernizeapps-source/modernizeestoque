@@ -8,6 +8,7 @@ export type Produto = {
   preco_venda: number
   estoque_atual: number
   estoque_minimo: number
+  unidades_por_fardo?: number | null
   codigo_barras: string | null
   categorias?: { nome: string } | null
 }
@@ -16,7 +17,7 @@ export async function listarProdutos(): Promise<Produto[]> {
   const supabase = createClient()
   const { data, error } = await supabase
     .from('produtos')
-    .select('id, nome, categoria_id, preco_custo, preco_venda, estoque_atual, estoque_minimo, codigo_barras, categorias(nome)')
+    .select('id, nome, categoria_id, preco_custo, preco_venda, estoque_atual, estoque_minimo, unidades_por_fardo, codigo_barras, categorias(nome)')
     .order('nome', { ascending: true })
 
   if (error) throw error
@@ -27,7 +28,7 @@ export async function buscarProdutoPorCodigoBarras(codigo: string): Promise<Prod
   const supabase = createClient()
   const { data, error } = await supabase
     .from('produtos')
-    .select('id, nome, categoria_id, preco_custo, preco_venda, estoque_atual, estoque_minimo, codigo_barras, categorias(nome)')
+    .select('id, nome, categoria_id, preco_custo, preco_venda, estoque_atual, estoque_minimo, unidades_por_fardo, codigo_barras, categorias(nome)')
     .eq('codigo_barras', codigo)
     .maybeSingle()
 
@@ -42,6 +43,7 @@ export async function criarProduto(input: {
   preco_venda: number
   estoque_atual: number
   estoque_minimo: number
+  unidades_por_fardo?: number | null
   codigo_barras?: string | null
 }): Promise<Produto> {
   const supabase = createClient()
@@ -56,9 +58,10 @@ export async function criarProduto(input: {
       preco_venda: input.preco_venda,
       estoque_atual: input.estoque_atual,
       estoque_minimo: input.estoque_minimo,
+      unidades_por_fardo: input.unidades_por_fardo && input.unidades_por_fardo > 0 ? input.unidades_por_fardo : null,
       codigo_barras: input.codigo_barras || null,
     })
-    .select('id, nome, categoria_id, preco_custo, preco_venda, estoque_atual, estoque_minimo, codigo_barras')
+    .select('id, nome, categoria_id, preco_custo, preco_venda, estoque_atual, estoque_minimo, unidades_por_fardo, codigo_barras')
     .single()
 
   if (erroProduto) {
@@ -85,7 +88,7 @@ export async function buscarProduto(id: string): Promise<Produto | null> {
   const supabase = createClient()
   const { data, error } = await supabase
     .from('produtos')
-    .select('id, nome, categoria_id, preco_custo, preco_venda, estoque_atual, estoque_minimo, codigo_barras, categorias(nome)')
+    .select('id, nome, categoria_id, preco_custo, preco_venda, estoque_atual, estoque_minimo, unidades_por_fardo, codigo_barras, categorias(nome)')
     .eq('id', id)
     .maybeSingle()
   if (error) throw error
@@ -98,6 +101,7 @@ export async function atualizarProduto(id: string, input: {
   preco_venda: number
   preco_custo: number
   estoque_minimo: number
+  unidades_por_fardo?: number | null
   codigo_barras?: string | null
 }): Promise<void> {
   const supabase = createClient()
@@ -109,6 +113,7 @@ export async function atualizarProduto(id: string, input: {
       preco_venda: input.preco_venda,
       preco_custo: input.preco_custo,
       estoque_minimo: input.estoque_minimo,
+      unidades_por_fardo: input.unidades_por_fardo && input.unidades_por_fardo > 0 ? input.unidades_por_fardo : null,
       codigo_barras: input.codigo_barras || null,
     })
     .eq('id', id)

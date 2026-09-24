@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
   Categoria, listarCategorias, criarCategoria, renomearCategoria,
-  excluirCategoria, contarProdutosDaCategoria, definirUnidadesPorFardo,
+  excluirCategoria, contarProdutosDaCategoria,
 } from '@/lib/supabase/categorias'
 import { primeiraMaiuscula } from '@/lib/supabase/produtos'
 import { useIsDesktop } from '@/lib/useIsDesktop'
@@ -23,7 +23,6 @@ export default function CategoriasPage() {
 
   const [editandoId, setEditandoId] = useState<string | null>(null)
   const [editNome, setEditNome] = useState('')
-  const [editFardo, setEditFardo] = useState('')
   const [salvando, setSalvando] = useState(false)
 
   // exclusão: precisa saber pra onde vão os produtos
@@ -68,7 +67,6 @@ export default function CategoriasPage() {
   function comecarEdicao(c: Categoria) {
     setEditandoId(c.id)
     setEditNome(c.nome)
-    setEditFardo(c.unidades_por_fardo ? String(c.unidades_por_fardo) : '')
     setExcluindoId(null)
   }
 
@@ -79,8 +77,6 @@ export default function CategoriasPage() {
     setErro(null)
     try {
       await renomearCategoria(editandoId, editNome.trim())
-      const fardo = parseInt(editFardo || '0', 10)
-      await definirUnidadesPorFardo(editandoId, fardo > 0 ? fardo : null)
       setEditandoId(null)
       await carregar()
       mostrar('Categoria atualizada! Os produtos dela já aparecem com o nome novo.')
@@ -179,28 +175,9 @@ export default function CategoriasPage() {
                   value={editNome}
                   onChange={(e) => setEditNome(primeiraMaiuscula(e.target.value))}
                   className="input"
-                  style={{ marginBottom: 12 }}
+                  style={{ marginBottom: 14 }}
                   autoFocus
                 />
-
-                <label className="label">Unidades por fardo</label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 6 }}>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={editFardo}
-                    onChange={(e) => setEditFardo(e.target.value.replace(/[^0-9]/g, ''))}
-                    placeholder="—"
-                    className="input"
-                    style={{ width: 88, textAlign: 'right' }}
-                  />
-                  <span className="mono" style={{ fontSize: 12, color: 'var(--text-dim)' }}>unidades</span>
-                </div>
-                <p style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 14, lineHeight: 1.5 }}>
-                  Preencha só se essa categoria for comprada em fardo (cerveja, refrigerante).
-                  Assim o aviso de reposição vem como "1 fardo + 5 un" em vez de "29 un". Deixe
-                  vazio pra mostrar sempre em unidades.
-                </p>
 
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button type="button" onClick={() => setEditandoId(null)} className="btn-secondary" style={{ flex: 1, padding: 10 }}>Cancelar</button>
@@ -246,11 +223,6 @@ export default function CategoriasPage() {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontSize: 14, fontWeight: 500 }}>{c.nome}</div>
-                  {c.unidades_por_fardo ? (
-                    <div className="mono" style={{ fontSize: 10.5, color: 'var(--text-dim)', marginTop: 3 }}>
-                      fardo de {c.unidades_por_fardo} un
-                    </div>
-                  ) : null}
                 </div>
                 <div style={{ display: 'flex', gap: 6 }}>
                   <button onClick={() => comecarEdicao(c)} className="btn-secondary" style={{ padding: '6px 12px', fontSize: 12 }}>Editar</button>

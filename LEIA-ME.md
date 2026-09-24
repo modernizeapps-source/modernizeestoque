@@ -1,7 +1,32 @@
-# Estoque Mercadinho — Pacote 14: Fase 3 (perfis e equipe)
+# Estoque Mercadinho — Pacote 16
 
-O banco já está atualizado. Só subir no GitHub e rodar:
+Inclui tudo dos pacotes 14 e 15. O banco já está atualizado.
 **Netlify → Deploys → Trigger deploy → Deploy project without cache**
+
+## Novidades deste pacote
+
+**Unidades por fardo agora é por produto.** O campo saiu da tela de Categorias e
+foi pro cadastro e edição de cada produto, logo abaixo do estoque mínimo. Uma
+Heineken pode ter fardo de 12, uma Corona de 24, uma long neck de 6.
+
+Nenhum produto tinha fardo configurado ainda, então nada se perdeu. É só abrir
+cada cerveja e preencher.
+
+**Leitor de código de barras:** bipar o mesmo produto várias vezes soma no
+carrinho (3 bips = 3 cervejas), inclusive começando de outra tela. O primeiro
+bip não é mais contado em dobro, e o reconhecimento aceita leitores um pouco
+mais lentos.
+
+**Menu à prova de falha:** se o perfil demorar a carregar, a barra mostra o
+básico (Início, Venda, Produtos, Caixa) em vez de ficar vazia.
+
+**Correção no banco (já aplicada):** desativar funcionário, renomear e trocar
+idioma falhavam calados por falta de permissão. Resolvido.
+
+## Como saber se subiu certo
+
+Entre com o login do Misa. No canto direito da barra do topo deve aparecer
+**"Misa"**, e no menu deve existir **Funcionários**.
 
 ---
 

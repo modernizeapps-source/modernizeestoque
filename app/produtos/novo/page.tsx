@@ -33,6 +33,7 @@ function NovoProdutoConteudo() {
   const [precoVenda, setPrecoVenda] = useState('')
   const [estoqueAtual, setEstoqueAtual] = useState('')
   const [estoqueMinimo, setEstoqueMinimo] = useState('')
+  const [fardo, setFardo] = useState('')
   const [cadastrado, setCadastrado] = useState<string | null>(null)
   const campoNomeRef = useRef<HTMLInputElement>(null)
   const [erro, setErro] = useState<string | null>(null)
@@ -93,6 +94,7 @@ function NovoProdutoConteudo() {
         preco_venda: parseFloat(precoVenda),
         estoque_atual: parseInt(estoqueAtual || '0', 10),
         estoque_minimo: parseInt(estoqueMinimo || '0', 10),
+        unidades_por_fardo: parseInt(fardo || '0', 10) || null,
         codigo_barras: codigoBarras.trim() || null,
       })
 
@@ -104,6 +106,7 @@ function NovoProdutoConteudo() {
         setPrecoVenda('')
         setEstoqueAtual('')
         setEstoqueMinimo('')
+        setFardo('')
         setCodigoBarras('')
         setTimeout(() => setCadastrado(null), 3500)
         campoNomeRef.current?.focus()
@@ -193,6 +196,22 @@ function NovoProdutoConteudo() {
               className="input"
             />
           </div>
+        </div>
+
+        <div>
+          <label className="label">Unidades por fardo (opcional)</label>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={fardo}
+            onChange={(e) => setFardo(e.target.value.replace(/[^0-9]/g, ''))}
+            placeholder="Ex: 6, 8, 12, 24"
+            className="input"
+          />
+          <p style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 6, lineHeight: 1.5 }}>
+            Preencha se esse produto é comprado em fardo. Assim o aviso de reposição
+            vem como "1 fardo + 5 un". Deixe vazio pra mostrar em unidades.
+          </p>
         </div>
 
         {erro && <p className="error-text">{erro}</p>}

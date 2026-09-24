@@ -200,7 +200,7 @@ export async function buscarPainelDesktop(): Promise<PainelDesktop> {
   // ——— Produtos que precisam de reposição ———
   const { data: produtos } = await supabase
     .from('produtos')
-    .select('id, nome, estoque_atual, estoque_minimo, categorias(unidades_por_fardo)')
+    .select('id, nome, estoque_atual, estoque_minimo, unidades_por_fardo, categorias(unidades_por_fardo)')
     .order('estoque_atual', { ascending: true })
 
   const produtosParaRepor = ((produtos ?? []) as any[])
@@ -211,7 +211,8 @@ export async function buscarPainelDesktop(): Promise<PainelDesktop> {
       nome: p.nome,
       estoque: p.estoque_atual,
       minimo: p.estoque_minimo,
-      unidadesPorFardo: p.categorias?.unidades_por_fardo ?? null,
+      // o fardo é do produto; a categoria só vale pra quem ainda não configurou
+      unidadesPorFardo: p.unidades_por_fardo ?? p.categorias?.unidades_por_fardo ?? null,
     }))
 
   // ——— Caixa aberto e quanto tem de dinheiro nele ———

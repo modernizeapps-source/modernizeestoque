@@ -36,6 +36,7 @@ export default function EditarProdutoPage() {
   const [precoVenda, setPrecoVenda] = useState('')
   const [estoqueMinimo, setEstoqueMinimo] = useState('')
   const [estoqueAtual, setEstoqueAtual] = useState('')
+  const [fardo, setFardo] = useState('')
   const [motivoEstoque, setMotivoEstoque] = useState('')
   const [salvando, setSalvando] = useState(false)
   const [excluindo, setExcluindo] = useState(false)
@@ -57,6 +58,7 @@ export default function EditarProdutoPage() {
       setCodigoBarras(p.codigo_barras ?? '')
       setPrecoVenda(String(p.preco_venda))
       setEstoqueMinimo(String(p.estoque_minimo))
+      setFardo(p.unidades_por_fardo ? String(p.unidades_por_fardo) : '')
       setEstoqueAtual(String(p.estoque_atual))
       setMotivoEstoque('')
     } catch (e) {
@@ -102,6 +104,7 @@ export default function EditarProdutoPage() {
         preco_venda: parseFloat(precoVenda.replace(',', '.')),
         preco_custo: produto!.preco_custo,
         estoque_minimo: parseInt(estoqueMinimo || '0', 10),
+        unidades_por_fardo: parseInt(fardo || '0', 10) || null,
         codigo_barras: codigoBarras.trim() || null,
       })
       // Volta pra lista de Produtos levando a confirmação
@@ -283,6 +286,22 @@ export default function EditarProdutoPage() {
               className="input"
             />
           </div>
+        </div>
+
+        <div>
+          <label className="label">Unidades por fardo (opcional)</label>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={fardo}
+            onChange={(e) => setFardo(e.target.value.replace(/[^0-9]/g, ''))}
+            placeholder="Ex: 6, 8, 12, 24"
+            className="input"
+          />
+          <p style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 6, lineHeight: 1.5 }}>
+            Preencha se esse produto é comprado em fardo. Assim o aviso de reposição
+            vem como "1 fardo + 5 un". Deixe vazio pra mostrar em unidades.
+          </p>
         </div>
 
         <div>
