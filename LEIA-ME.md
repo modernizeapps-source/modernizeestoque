@@ -1,3 +1,32 @@
+# Estoque Mercadinho — Pacote 17 (correção urgente do leitor)
+
+Só código, sem mudança no banco.
+**Netlify → Deploys → Trigger deploy → Deploy project without cache**
+
+## O que estava acontecendo
+
+O leitor de código de barras "digita" o código e termina apertando Enter. No
+computador, a tela de Venda tem o atalho "Enter finaliza a venda". No primeiro
+bip o carrinho estava vazio e nada acontecia; a partir do segundo, o Enter do
+leitor abria a tela de pagamento, e com ela aberta o leitor desligava.
+
+## A correção
+
+Quando o sistema reconhece que foi o leitor, ele segura aquele Enter pra si e o
+atalho não reage. O Enter apertado por uma pessoa continua finalizando a venda.
+
+De quebra: se o cursor estiver no campo de busca na hora do bip, o código não
+fica mais escrito lá escondendo a lista de produtos.
+
+## Como testar
+
+1. Abra a Venda no computador
+2. Bipe um produto, depois outro diferente, depois o primeiro de novo
+3. O carrinho deve ter os dois produtos, com o primeiro em quantidade 2
+4. Aperte Enter no teclado: deve abrir o pagamento
+
+---
+
 # Estoque Mercadinho — Pacote 16
 
 Inclui tudo dos pacotes 14 e 15. O banco já está atualizado.

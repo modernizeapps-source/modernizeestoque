@@ -36,6 +36,12 @@ export function useLeitorCodigoBarras(onScan: (codigo: string) => void, ativo: b
         // Só considera leitura de código de barras se as teclas vieram rápido
         // demais pra ser uma pessoa digitando, e o código tem um tamanho plausível
         if (codigo.length >= 4 && intervalo <= 120) {
+          // Esse Enter é do leitor, não de uma pessoa. Segura ele aqui pra que
+          // nada mais na tela reaja: nem o atalho "Enter finaliza a venda",
+          // nem um botão que por acaso esteja selecionado. Sem isso, o segundo
+          // bip abria a tela de pagamento e travava o leitor.
+          e.preventDefault()
+          e.stopImmediatePropagation()
           onScanRef.current(codigo)
         }
         return

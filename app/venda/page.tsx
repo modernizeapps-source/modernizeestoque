@@ -138,6 +138,9 @@ function VendaConteudo() {
   // estiver lá, só aumenta a quantidade.
   async function processarCodigoBarras(codigo: string) {
     setCodigoNaoEncontrado(null)
+    // Se o cursor estava no campo de busca, o leitor escreveu o código lá.
+    // Tira pra não esconder a lista de produtos.
+    setBusca((prev) => (prev.includes(codigo) ? prev.replace(codigo, '').trim() : prev))
     const jaCadastrado = produtos.find((p) => p.codigo_barras === codigo)
     if (jaCadastrado) {
       alterarQuantidade(jaCadastrado.id, 1)
